@@ -23,6 +23,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/seuils": "Seuils de référence",
   "/dashboard/installation": "Installation",
   "/dashboard/mes-missions": "Mes missions",
+  "/dashboard/parametres": "Paramètres du compte",
 }
 
 export default function AdminDashboardLayout({

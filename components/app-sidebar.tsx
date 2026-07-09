@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 
-import { NavMain } from "@/components/nav-main"
+import { NavMain, type QuickCreate } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import { useAuth } from "@/lib/auth/use-auth"
@@ -17,7 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { LayoutDashboardIcon, MapIcon, CpuIcon, RadioIcon, UsersIcon, CameraIcon, FileTextIcon, Settings2Icon, CircleHelpIcon, SearchIcon, LeafIcon, Building2Icon, GaugeIcon, HardHatIcon, WrenchIcon, ClipboardListIcon } from "lucide-react"
+import { LayoutDashboardIcon, MapIcon, CpuIcon, RadioIcon, UsersIcon, CameraIcon, FileTextIcon, Settings2Icon, LeafIcon, Building2Icon, GaugeIcon, HardHatIcon, WrenchIcon, ClipboardListIcon } from "lucide-react"
 
 // Élément de navigation principal.
 // `roles` liste les rôles autorisés à voir l'élément. Si absent, visible par tous.
@@ -207,26 +207,10 @@ const data = {
   ],
   navSecondary: [
     {
-      title: "Settings",
-      url: "#",
+      title: "Paramètres",
+      url: "/dashboard/parametres",
       icon: (
         <Settings2Icon
-        />
-      ),
-    },
-    {
-      title: "Get Help",
-      url: "#",
-      icon: (
-        <CircleHelpIcon
-        />
-      ),
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: (
-        <SearchIcon
         />
       ),
     },
@@ -241,7 +225,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const displayUser = {
     name: user ? `${user.prenom} ${user.nom}`.trim() : "Utilisateur",
     email: user?.email ?? "",
-    avatar: "",
+    avatar: user?.photoUrl ?? "",
   }
 
   function handleLogout() {
@@ -255,6 +239,23 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const navItems = navSource.filter(
     (item) => !item.roles || (user != null && item.roles.includes(user.role)),
   )
+
+  // Création rapide selon le rôle :
+  //  - SUPERVISEUR → créer un technicien
+  //  - ADMIN       → créer un agriculteur
+  //  - TECHNICIEN / AGRICULTEUR → aucun bouton
+  let quickCreate: QuickCreate | undefined
+  if (user?.role === "SUPERVISEUR") {
+    quickCreate = {
+      label: "Créer un technicien",
+      url: "/dashboard/techniciens/nouveau",
+    }
+  } else if (user?.role === "ADMIN") {
+    quickCreate = {
+      label: "Créer un agriculteur",
+      url: "/dashboard/utilisateurs/nouveau",
+    }
+  }
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -274,7 +275,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navItems} />
+        <NavMain items={navItems} quickCreate={quickCreate} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

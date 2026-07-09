@@ -22,6 +22,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/dispositifs": "Dispositifs",
   "/dashboard/capteurs": "Capteurs",
   "/dashboard/utilisateurs": "Utilisateurs",
+  "/dashboard/parametres": "Paramètres du compte",
 }
 
 export default function DashboardLayout({

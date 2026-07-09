@@ -28,6 +28,7 @@ export interface AuthResponse {
   prenom: string
   email: string
   role: Role
+  photoUrl: string | null
   premiereConnexion: boolean
   emailVerifie: boolean
   organisationId: number | null
@@ -42,6 +43,7 @@ export interface AuthUser {
   prenom: string
   email: string
   role: Role
+  photoUrl: string | null
   premiereConnexion: boolean
   emailVerifie: boolean
   organisationId: number | null

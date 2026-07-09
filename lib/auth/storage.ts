@@ -50,6 +50,19 @@ export function getToken(): string | null {
   return token
 }
 
+// Durée restante (en millisecondes) avant l'expiration du token courant.
+// - null si aucun token, ou si l'expiration n'est pas lisible (pas de claim exp).
+// - valeur négative ou nulle si le token est déjà expiré.
+// Sert à programmer une déconnexion proactive à l'instant exact d'expiration.
+export function dureeAvantExpiration(): number | null {
+  if (!isBrowser()) return null
+  const token = window.localStorage.getItem(TOKEN_KEY)
+  if (!token) return null
+  const exp = lireExpiration(token)
+  if (exp === null) return null
+  return exp * 1000 - Date.now()
+}
+
 export function setToken(token: string): void {
   if (!isBrowser()) return
   window.localStorage.setItem(TOKEN_KEY, token)

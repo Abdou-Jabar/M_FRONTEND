@@ -54,8 +54,14 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { body, auth = true, headers, ...rest } = options
 
+  // Le corps peut être du FormData (upload de fichier) : dans ce cas on laisse
+  // le navigateur définir le Content-Type (avec le boundary multipart) et on
+  // n'applique pas de sérialisation JSON.
+  const estFormData =
+    typeof FormData !== "undefined" && body instanceof FormData
+
   const finalHeaders = new Headers(headers)
-  if (body !== undefined) {
+  if (body !== undefined && !estFormData) {
     finalHeaders.set("Content-Type", "application/json")
   }
 
@@ -69,7 +75,12 @@ export async function apiFetch<T>(
   const response = await fetch(`${API_BASE_URL}${API_PREFIX}${path}`, {
     ...rest,
     headers: finalHeaders,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body:
+      body === undefined
+        ? undefined
+        : estFormData
+          ? (body as FormData)
+          : JSON.stringify(body),
   })
 
   if (!response.ok) {

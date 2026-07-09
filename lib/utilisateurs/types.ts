@@ -17,12 +17,19 @@ export interface Utilisateur {
   prenom: string
   email: string
   role: Role
+  photoUrl: string | null
   actif: boolean
   estVerifie: boolean
   estSupprime: boolean
   organisationId: number | null
   organisationNom: string | null
   dateCreation: string
+}
+
+// Mise à jour du profil de l'utilisateur connecté (email non modifiable).
+export interface ProfilUpdateRequest {
+  nom: string
+  prenom: string
 }
 
 // Libellés lisibles des rôles.

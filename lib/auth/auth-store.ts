@@ -89,3 +89,14 @@ export function marquerMotDePasseChange(): void {
   state = { user, hydrated: true }
   emit()
 }
+
+// Met à jour partiellement l'utilisateur courant (ex. après édition du profil
+// ou changement de photo), persiste et notifie React.
+export function mettreAJourUtilisateur(partiel: Partial<AuthUser>): void {
+  if (!state.user) return
+  const user: AuthUser = { ...state.user, ...partiel }
+  setStoredUser(user)
+  initialized = true
+  state = { user, hydrated: true }
+  emit()
+}

@@ -12,6 +12,7 @@ import {
   login,
   logout,
   marquerMotDePasseChange,
+  mettreAJourUtilisateur,
   subscribe,
 } from "./auth-store"
 import type { AuthUser, LoginRequest } from "./types"
@@ -25,6 +26,8 @@ interface UseAuthResult {
   logout: () => void
   // Lève le drapeau « première connexion » après un changement de mot de passe.
   marquerMotDePasseChange: () => void
+  // Met à jour partiellement l'utilisateur courant (profil, photo).
+  mettreAJourUtilisateur: (partiel: Partial<AuthUser>) => void
 }
 
 export function useAuth(): UseAuthResult {
@@ -37,5 +40,6 @@ export function useAuth(): UseAuthResult {
     login,
     logout,
     marquerMotDePasseChange,
+    mettreAJourUtilisateur,
   }
 }
