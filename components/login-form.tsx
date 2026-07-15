@@ -13,6 +13,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { useAuth } from "@/lib/auth/use-auth"
 import { ROLES_CLIENT, ROLES_EQUIPE } from "@/lib/auth/types"
 import { ApiError } from "@/lib/api"
@@ -134,10 +135,9 @@ export function LoginForm({
               Mot de passe oublié ?
             </a>
           </div>
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             autoComplete="current-password"
             required
             value={password}

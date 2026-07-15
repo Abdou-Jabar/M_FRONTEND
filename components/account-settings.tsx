@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/card"
 import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { ApiError } from "@/lib/api"
 import { changerMotDePasse } from "@/lib/auth/auth-service"
 import { useAuth } from "@/lib/auth/use-auth"
@@ -259,9 +260,8 @@ export function AccountSettings() {
           >
             <Field>
               <FieldLabel htmlFor="ancien">Mot de passe actuel</FieldLabel>
-              <Input
+              <PasswordInput
                 id="ancien"
-                type="password"
                 autoComplete="current-password"
                 value={ancien}
                 onChange={(e) => setAncien(e.target.value)}
@@ -271,9 +271,8 @@ export function AccountSettings() {
 
             <Field>
               <FieldLabel htmlFor="nouveau">Nouveau mot de passe</FieldLabel>
-              <Input
+              <PasswordInput
                 id="nouveau"
-                type="password"
                 autoComplete="new-password"
                 minLength={8}
                 value={nouveau}
@@ -286,9 +285,8 @@ export function AccountSettings() {
               <FieldLabel htmlFor="confirmation">
                 Confirmer le nouveau mot de passe
               </FieldLabel>
-              <Input
+              <PasswordInput
                 id="confirmation"
-                type="password"
                 autoComplete="new-password"
                 minLength={8}
                 value={confirmation}

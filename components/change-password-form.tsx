@@ -16,7 +16,7 @@ import {
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { ApiError } from "@/lib/api"
 import { changerMotDePasse } from "@/lib/auth/auth-service"
 import { useAuth } from "@/lib/auth/use-auth"
@@ -95,9 +95,8 @@ export function ChangePasswordForm({
 
         <Field>
           <FieldLabel htmlFor="ancien">Mot de passe actuel</FieldLabel>
-          <Input
+          <PasswordInput
             id="ancien"
-            type="password"
             autoComplete="current-password"
             required
             value={ancien}
@@ -112,9 +111,8 @@ export function ChangePasswordForm({
 
         <Field>
           <FieldLabel htmlFor="nouveau">Nouveau mot de passe</FieldLabel>
-          <Input
+          <PasswordInput
             id="nouveau"
-            type="password"
             autoComplete="new-password"
             required
             minLength={8}
@@ -129,9 +127,8 @@ export function ChangePasswordForm({
           <FieldLabel htmlFor="confirmation">
             Confirmer le nouveau mot de passe
           </FieldLabel>
-          <Input
+          <PasswordInput
             id="confirmation"
-            type="password"
             autoComplete="new-password"
             required
             minLength={8}

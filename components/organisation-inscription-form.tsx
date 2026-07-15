@@ -18,6 +18,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { ApiError } from "@/lib/api"
 import {
   demanderCodeInscription,
@@ -242,9 +243,8 @@ export function OrganisationInscriptionForm() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field>
             <FieldLabel htmlFor="password">Mot de passe</FieldLabel>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="new-password"
               required
               value={password}
@@ -254,9 +254,8 @@ export function OrganisationInscriptionForm() {
           </Field>
           <Field>
             <FieldLabel htmlFor="confirmation">Confirmation</FieldLabel>
-            <Input
+            <PasswordInput
               id="confirmation"
-              type="password"
               autoComplete="new-password"
               required
               value={confirmation}
