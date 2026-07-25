@@ -18,7 +18,11 @@ import { ROLES_CLIENT } from "@/lib/auth/types"
 // Titre de l'en-tête en fonction de la route courante.
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard": "Tableau de bord",
-  "/dashboard/parcelles": "Parcelles",
+  "/dashboard/parcelles": "Mes parcelles",
+  "/dashboard/cultures": "Mes cultures",
+  "/dashboard/alertes": "Mes alertes",
+  "/dashboard/comparer": "Comparer des parcelles",
+  "/dashboard/carte": "Carte des parcelles",
   "/dashboard/dispositifs": "Dispositifs",
   "/dashboard/capteurs": "Capteurs",
   "/dashboard/utilisateurs": "Utilisateurs",

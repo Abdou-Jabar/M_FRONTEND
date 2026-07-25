@@ -17,7 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { LayoutDashboardIcon, MapIcon, CpuIcon, RadioIcon, UsersIcon, CameraIcon, FileTextIcon, Settings2Icon, LeafIcon, Building2Icon, GaugeIcon, HardHatIcon, WrenchIcon, ClipboardListIcon } from "lucide-react"
+import { LayoutDashboardIcon, MapIcon, CpuIcon, RadioIcon, UsersIcon, CameraIcon, FileTextIcon, Settings2Icon, LeafIcon, Building2Icon, GaugeIcon, HardHatIcon, WrenchIcon, ClipboardListIcon, SproutIcon, BellIcon, GitCompareArrowsIcon, MapPinnedIcon } from "lucide-react"
 
 // Élément de navigation principal.
 // `roles` liste les rôles autorisés à voir l'élément. Si absent, visible par tous.
@@ -32,46 +32,51 @@ type NavItem = {
 const data = {
   navMainClient: [
     {
-      title: "Dashboard",
+      title: "Tableau de bord",
       url: "/dashboard",
-      icon: (
-        <LayoutDashboardIcon
-        />
-      ),
+      icon: <LayoutDashboardIcon />,
     },
     {
-      title: "Parcelles",
+      title: "Mes parcelles",
       url: "/dashboard/parcelles",
-      icon: (
-        <MapIcon
-        />
-      ),
+      icon: <MapIcon />,
+    },
+    {
+      title: "Mes cultures",
+      url: "/dashboard/cultures",
+      icon: <SproutIcon />,
+    },
+    {
+      title: "Mes alertes",
+      url: "/dashboard/alertes",
+      icon: <BellIcon />,
+    },
+    {
+      title: "Comparer",
+      url: "/dashboard/comparer",
+      icon: <GitCompareArrowsIcon />,
+    },
+    {
+      title: "Carte",
+      url: "/dashboard/carte",
+      icon: <MapPinnedIcon />,
     },
     {
       title: "Dispositifs",
       url: "/dashboard/dispositifs",
-      icon: (
-        <CpuIcon
-        />
-      ),
+      icon: <CpuIcon />,
       roles: ["ADMIN"],
     },
     {
       title: "Capteurs",
       url: "/dashboard/capteurs",
-      icon: (
-        <RadioIcon
-        />
-      ),
+      icon: <RadioIcon />,
       roles: ["ADMIN"],
     },
     {
       title: "Utilisateurs",
       url: "/dashboard/utilisateurs",
-      icon: (
-        <UsersIcon
-        />
-      ),
+      icon: <UsersIcon />,
       roles: ["ADMIN"],
     },
   ] as NavItem[],
@@ -127,6 +132,12 @@ const data = {
         <GaugeIcon
         />
       ),
+      roles: ["SUPERVISEUR"],
+    },
+    {
+      title: "Carte",
+      url: "/dashboard/carte",
+      icon: <MapPinnedIcon />,
       roles: ["SUPERVISEUR"],
     },
     {

@@ -2,7 +2,17 @@
 // S'appuie sur le client HTTP commun (lib/api), qui joint le token JWT.
 
 import { apiFetch } from "@/lib/api"
-import type { Parcelle, ParcelleRequest } from "./types"
+import type { Parcelle, ParcelleRequest, TypeSolDeduction } from "./types"
+
+// Déduit le type de sol à partir d'une localisation GPS (aperçu formulaire).
+export function detecterTypeSol(
+  latitude: number,
+  longitude: number,
+): Promise<TypeSolDeduction> {
+  return apiFetch<TypeSolDeduction>(
+    `/parcelles/type-sol?latitude=${latitude}&longitude=${longitude}`,
+  )
+}
 
 // Crée une nouvelle parcelle (réservé à l'administrateur côté backend).
 export function creerParcelle(data: ParcelleRequest): Promise<Parcelle> {

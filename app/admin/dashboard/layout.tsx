@@ -21,6 +21,7 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/missions": "Missions",
   "/dashboard/utilisateurs": "Utilisateurs",
   "/dashboard/seuils": "Seuils de référence",
+  "/dashboard/carte": "Carte des parcelles",
   "/dashboard/installation": "Installation",
   "/dashboard/mes-missions": "Mes missions",
   "/dashboard/parametres": "Paramètres du compte",

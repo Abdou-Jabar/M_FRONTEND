@@ -9,28 +9,40 @@ import type { ApercuCapteur } from "@/lib/stats/types"
 
 export function ClientApercuCapteurs({
   apercu,
+  // Pour l'agriculteur : les graphes pointent vers la parcelle (les pages de
+  // détail capteur/dispositif — MAC, batterie… — lui sont réservées à l'ADMIN).
+  lienVersParcelle = false,
 }: {
   apercu: ApercuCapteur[]
+  lienVersParcelle?: boolean
 }) {
   if (apercu.length === 0) {
     return (
       <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed p-8 text-sm text-muted-foreground">
         Aucune mesure disponible pour le moment. Les graphes apparaîtront dès que
-        les capteurs commenceront à transmettre des données.
+        les mesures commenceront à être relevées sur vos parcelles.
       </div>
     )
   }
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      {apercu.map((capteur) => (
-        <MesureChart
-          key={capteur.capteurId}
-          serie={capteur}
-          parcelleNom={capteur.parcelleNom}
-          href={`/dashboard/capteurs/${capteur.capteurId}`}
-        />
-      ))}
+      {apercu.map((capteur) => {
+        const href =
+          lienVersParcelle && capteur.parcelleId != null
+            ? `/dashboard/parcelles/${capteur.parcelleId}`
+            : lienVersParcelle
+              ? undefined
+              : `/dashboard/capteurs/${capteur.capteurId}`
+        return (
+          <MesureChart
+            key={capteur.capteurId}
+            serie={capteur}
+            parcelleNom={capteur.parcelleNom}
+            href={href}
+          />
+        )
+      })}
     </div>
   )
 }

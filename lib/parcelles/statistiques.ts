@@ -27,3 +27,25 @@ export function getStatistiquesParcelle(
     `/mesures/parcelle/${parcelleId}/statistiques?jours=${jours}`,
   )
 }
+
+// Série d'une parcelle pour un type de capteur (comparaison multi-parcelles).
+export interface SerieComparaison {
+  parcelleId: number
+  parcelleNom: string
+  type: TypeCapteur
+  unite: string
+  points: MesurePoint[]
+}
+
+// GET /api/mesures/comparer?parcelleIds=1&parcelleIds=2&type=HUMIDITE_SOL&jours=30
+export function comparerParcelles(
+  parcelleIds: number[],
+  type: TypeCapteur,
+  jours: number,
+): Promise<SerieComparaison[]> {
+  // Spring @RequestParam List<Long> attend parcelleIds=1&parcelleIds=2
+  const params = parcelleIds.map((id) => `parcelleIds=${id}`).join("&")
+  return apiFetch<SerieComparaison[]>(
+    `/mesures/comparer?${params}&type=${type}&jours=${jours}`,
+  )
+}

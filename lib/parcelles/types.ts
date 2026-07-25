@@ -13,14 +13,25 @@ export type TypeSol =
 export type Environnement = "PLEIN_AIR" | "CONTROLE"
 
 // Corps envoyé à POST/PUT /api/parcelles.
+// - typeSol est optionnel : en environnement CONTROLE, il peut être saisi
+//   manuellement ; sinon (ou en PLEIN_AIR) il est déduit du GPS côté backend.
+// - latitude/longitude requises dès qu'une déduction est nécessaire.
 export interface ParcelleRequest {
   nom: string
   description?: string
   superficie: number
-  latitude: number
-  longitude: number
-  typeSol: TypeSol
+  latitude?: number
+  longitude?: number
+  typeSol?: TypeSol
   environnement: Environnement
+}
+
+// Résultat de la déduction du type de sol depuis le GPS (SoilGrids).
+export interface TypeSolDeduction {
+  typeSol: TypeSol
+  argilePct: number
+  sablePct: number
+  limonPct: number
 }
 
 // Réponse renvoyée par l'API pour une parcelle.
@@ -35,6 +46,7 @@ export interface Parcelle {
   environnement: Environnement
   actif: boolean
   dateCreation: string
+  photoUrl?: string | null
 }
 
 // Libellés lisibles (français) pour l'affichage.

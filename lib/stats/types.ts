@@ -63,6 +63,9 @@ export interface DashboardClient {
   dispositifsHorsLigne: number
   totalCapteurs: number
 
+  // Cultures
+  culturesActives: number
+
   // Alertes
   alertesActives: number
 
