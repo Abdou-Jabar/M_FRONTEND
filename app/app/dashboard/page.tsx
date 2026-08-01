@@ -115,7 +115,7 @@ export default function DashboardPage() {
 
           {alertes.length === 0 ? (
             <div className="flex items-center justify-center gap-2 rounded-xl border border-dashed p-6 text-sm text-muted-foreground">
-              Aucune alerte active — tout est au vert 🌱
+              Aucune alerte active — tout est en ordre.
             </div>
           ) : (
             <div className="flex flex-col gap-2">

@@ -136,7 +136,8 @@ export function MeteoWidget({
           {/* Précipitations */}
           <div className="flex flex-col gap-1 rounded-xl bg-muted/40 p-3">
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              🌧️ Précipitations
+              <DropletIcon className="size-3" />
+              Precipitations
             </div>
             <span className="text-2xl font-semibold tabular-nums">
               {meteo.precipitation} mm

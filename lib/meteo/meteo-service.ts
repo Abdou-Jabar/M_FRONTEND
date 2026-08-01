@@ -20,31 +20,31 @@ export interface DescriptionMeteo {
 }
 
 const CODES_METEO: Record<number, DescriptionMeteo> = {
-  0:  { libelle: "Ciel dégagé",          emoji: "☀️" },
-  1:  { libelle: "Principalement dégagé", emoji: "🌤️" },
-  2:  { libelle: "Partiellement nuageux", emoji: "⛅" },
-  3:  { libelle: "Couvert",               emoji: "☁️" },
-  45: { libelle: "Brouillard",            emoji: "🌫️" },
-  48: { libelle: "Brouillard givrant",    emoji: "🌫️" },
-  51: { libelle: "Bruine légère",         emoji: "🌦️" },
-  53: { libelle: "Bruine modérée",        emoji: "🌦️" },
-  55: { libelle: "Bruine dense",          emoji: "🌧️" },
-  61: { libelle: "Pluie légère",          emoji: "🌦️" },
-  63: { libelle: "Pluie modérée",         emoji: "🌧️" },
-  65: { libelle: "Pluie forte",           emoji: "🌧️" },
-  71: { libelle: "Neige légère",          emoji: "🌨️" },
-  73: { libelle: "Neige modérée",         emoji: "❄️" },
-  75: { libelle: "Neige forte",           emoji: "❄️" },
-  80: { libelle: "Averses légères",       emoji: "🌦️" },
-  81: { libelle: "Averses modérées",      emoji: "🌧️" },
-  82: { libelle: "Averses violentes",     emoji: "⛈️" },
-  95: { libelle: "Orage",                 emoji: "⛈️" },
-  96: { libelle: "Orage avec grêle",      emoji: "⛈️" },
-  99: { libelle: "Orage avec forte grêle",emoji: "⛈️" },
+  0:  { libelle: "Ciel degage",           emoji: "Ensoleille"         },
+  1:  { libelle: "Principalement degage", emoji: "Peu nuageux"        },
+  2:  { libelle: "Partiellement nuageux", emoji: "Nuageux"            },
+  3:  { libelle: "Couvert",               emoji: "Couvert"            },
+  45: { libelle: "Brouillard",            emoji: "Brouillard"         },
+  48: { libelle: "Brouillard givrant",    emoji: "Brouillard givrant" },
+  51: { libelle: "Bruine legere",         emoji: "Bruine"             },
+  53: { libelle: "Bruine moderee",        emoji: "Bruine"             },
+  55: { libelle: "Bruine dense",          emoji: "Pluie"              },
+  61: { libelle: "Pluie legere",          emoji: "Pluie"              },
+  63: { libelle: "Pluie moderee",         emoji: "Pluie"              },
+  65: { libelle: "Pluie forte",           emoji: "Pluie forte"        },
+  71: { libelle: "Neige legere",          emoji: "Neige"              },
+  73: { libelle: "Neige moderee",         emoji: "Neige"              },
+  75: { libelle: "Neige forte",           emoji: "Neige forte"        },
+  80: { libelle: "Averses legeres",       emoji: "Averses"            },
+  81: { libelle: "Averses moderees",      emoji: "Averses"            },
+  82: { libelle: "Averses violentes",     emoji: "Averses violentes"  },
+  95: { libelle: "Orage",                 emoji: "Orage"              },
+  96: { libelle: "Orage avec grele",      emoji: "Orage"              },
+  99: { libelle: "Orage avec forte grele",emoji: "Orage"              },
 }
 
 export function descriptionMeteo(code: number): DescriptionMeteo {
-  return CODES_METEO[code] ?? { libelle: "Conditions inconnues", emoji: "🌡️" }
+  return CODES_METEO[code] ?? { libelle: "Conditions inconnues", emoji: "Inconnu" }
 }
 
 // Appel direct à l'API Open-Meteo (côté navigateur, pas de proxy nécessaire).

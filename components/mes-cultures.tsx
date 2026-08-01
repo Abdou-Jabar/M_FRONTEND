@@ -225,7 +225,7 @@ function CarteCulture({
             href={`/dashboard/parcelles/${culture.parcelleId}`}
             className="text-sm text-primary hover:underline"
           >
-            📍 {culture.parcelleNom}
+            {culture.parcelleNom}
           </Link>
         </div>
         <Badge variant={STATUT_BADGE[culture.statut]}>

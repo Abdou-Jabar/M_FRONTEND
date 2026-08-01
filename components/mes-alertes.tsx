@@ -261,7 +261,7 @@ function CarteAlerte({
       )}
       {alerte.resolue && (
         <p className="text-xs text-muted-foreground">
-          ✓ Alerte résolue
+          Alerte resolue
         </p>
       )}
     </div>

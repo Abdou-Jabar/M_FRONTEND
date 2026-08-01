@@ -17,7 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { LayoutDashboardIcon, MapIcon, CpuIcon, RadioIcon, UsersIcon, CameraIcon, FileTextIcon, Settings2Icon, LeafIcon, Building2Icon, GaugeIcon, HardHatIcon, WrenchIcon, ClipboardListIcon, SproutIcon, BellIcon, GitCompareArrowsIcon, MapPinnedIcon } from "lucide-react"
+import { LayoutDashboardIcon, MapIcon, CpuIcon, RadioIcon, UsersIcon, CameraIcon, FileTextIcon, Settings2Icon, LeafIcon, Building2Icon, GaugeIcon, HardHatIcon, WrenchIcon, ClipboardListIcon, SproutIcon, BellIcon, GitCompareArrowsIcon, MapPinnedIcon, TicketIcon } from "lucide-react"
 
 // Élément de navigation principal.
 // `roles` liste les rôles autorisés à voir l'élément. Si absent, visible par tous.
@@ -78,6 +78,11 @@ const data = {
       url: "/dashboard/utilisateurs",
       icon: <UsersIcon />,
       roles: ["ADMIN"],
+    },
+    {
+      title: "Tickets",
+      url: "/dashboard/tickets",
+      icon: <TicketIcon />,
     },
   ] as NavItem[],
   navMainEquipe: [
@@ -157,6 +162,11 @@ const data = {
         />
       ),
       roles: ["TECHNICIEN"],
+    },
+    {
+      title: "Tickets",
+      url: "/dashboard/tickets",
+      icon: <TicketIcon />,
     },
   ] as NavItem[],
   navClouds: [

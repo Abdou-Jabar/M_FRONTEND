@@ -25,6 +25,8 @@ const PAGE_TITLES: Record<string, string> = {
   "/dashboard/installation": "Installation",
   "/dashboard/mes-missions": "Mes missions",
   "/dashboard/parametres": "Paramètres du compte",
+  "/dashboard/tickets": "Tickets de support",
+  "/dashboard/tickets/nouveau": "Nouveau ticket",
 }
 
 export default function AdminDashboardLayout({
