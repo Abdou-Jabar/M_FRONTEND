@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint-and-types:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: Installation des dépendances
+        run: bun install --frozen-lockfile
+
+      - name: Vérification des types
+        run: bunx tsc --noEmit
+
+      - name: ESLint
+        run: bunx eslint .
