@@ -1,10 +1,9 @@
-import Link from "next/link"
-import { Plus } from "lucide-react"
-
-import { Button } from "@/components/ui/button"
 import { ParcellesTable } from "@/components/parcelles-table"
 
 // Page Parcelles : app.agrismart.com/dashboard/parcelles
+// Le bouton « Nouvelle parcelle » est rendu par ParcellesTable
+// (composant client) uniquement pour le rôle ADMIN — le backend
+// refuse désormais l'écriture aux autres rôles (@PreAuthorize).
 export default function ParcellesPage() {
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 md:gap-6 md:p-6">
@@ -15,12 +14,6 @@ export default function ParcellesPage() {
             Gérez vos parcelles agricoles et suivez leur état.
           </p>
         </div>
-        <Button asChild>
-          <Link href="/dashboard/parcelles/nouvelle">
-            <Plus className="size-4" />
-            Nouvelle parcelle
-          </Link>
-        </Button>
       </div>
       <ParcellesTable />
     </div>

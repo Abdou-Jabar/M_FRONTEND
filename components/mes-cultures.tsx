@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { SproutIcon } from "lucide-react"
+import { PlusIcon, SproutIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -25,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { ApiError } from "@/lib/api"
 import {
+  abandonnerCulture,
   getMesCultures,
   recolterCulture,
 } from "@/lib/cultures/culture-service"
@@ -116,6 +117,19 @@ export function MesCultures() {
     }
   }
 
+  async function handleAbandonner(id: number) {
+    setBusyId(id)
+    try {
+      await abandonnerCulture(id)
+      setCultures((prev) => prev.filter((c) => c.id !== id))
+      toast.success("Culture abandonnée.")
+    } catch (e) {
+      toast.error(e instanceof ApiError ? e.message : "Action impossible.")
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   const affichees =
     filtre === "TOUTES"
       ? cultures
@@ -143,33 +157,41 @@ export function MesCultures() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Filtres */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          variant={filtre === "EN_COURS" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFiltre("EN_COURS")}
-        >
-          En cours
-          {nbEnCours > 0 && (
-            <Badge variant="secondary" className="ml-1">
-              {nbEnCours}
-            </Badge>
-          )}
-        </Button>
-        <Button
-          variant={filtre === "RECOLTEE" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFiltre("RECOLTEE")}
-        >
-          Récoltées
-        </Button>
-        <Button
-          variant={filtre === "TOUTES" ? "default" : "outline"}
-          size="sm"
-          onClick={() => setFiltre("TOUTES")}
-        >
-          Toutes ({cultures.length})
+      {/* Filtres + action */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant={filtre === "EN_COURS" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFiltre("EN_COURS")}
+          >
+            En cours
+            {nbEnCours > 0 && (
+              <Badge variant="secondary" className="ml-1">
+                {nbEnCours}
+              </Badge>
+            )}
+          </Button>
+          <Button
+            variant={filtre === "RECOLTEE" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFiltre("RECOLTEE")}
+          >
+            Récoltées
+          </Button>
+          <Button
+            variant={filtre === "TOUTES" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setFiltre("TOUTES")}
+          >
+            Toutes ({cultures.length})
+          </Button>
+        </div>
+        <Button size="sm" asChild>
+          <Link href="/dashboard/cultures/nouvelle">
+            <PlusIcon className="size-4" />
+            Nouvelle culture
+          </Link>
         </Button>
       </div>
 
@@ -186,6 +208,7 @@ export function MesCultures() {
               culture={c}
               busy={busyId === c.id}
               onRecolter={handleRecolter}
+              onAbandonner={handleAbandonner}
             />
           ))}
         </div>
@@ -198,10 +221,12 @@ function CarteCulture({
   culture,
   busy,
   onRecolter,
+  onAbandonner,
 }: {
   culture: Culture
   busy: boolean
   onRecolter: (id: number) => void
+  onAbandonner: (id: number) => void
 }) {
   return (
     <div
@@ -284,6 +309,36 @@ function CarteCulture({
                 <AlertDialogCancel>Annuler</AlertDialogCancel>
                 <AlertDialogAction onClick={() => onRecolter(culture.id)}>
                   Confirmer la récolte
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive"
+                disabled={busy}
+              >
+                Abandonner
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Abandonner cette culture ?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  La culture de{" "}
+                  <strong>{culture.typeCultureNom}</strong> sur la parcelle{" "}
+                  <strong>{culture.parcelleNom}</strong> sera retirée du
+                  suivi. Les mesures et alertes déjà enregistrées sont
+                  conservées.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={() => onAbandonner(culture.id)}>
+                  Abandonner la culture
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

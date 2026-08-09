@@ -35,6 +35,7 @@ import {
 } from "@/lib/dispositifs/types"
 import { getCapteursByDispositif } from "@/lib/capteurs/capteur-service"
 import { TYPE_CAPTEUR_LABELS, type Capteur } from "@/lib/capteurs/types"
+import { ActionneursPanneau } from "@/components/actionneurs-panneau"
 
 function formaterDate(valeur: string | null): string {
   if (!valeur) return "—"
@@ -246,6 +247,9 @@ export default function DispositifDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Actionneurs : commande manuelle, mode auto, historique */}
+      <ActionneursPanneau dispositifId={dispositif.id} />
     </div>
   )
 }

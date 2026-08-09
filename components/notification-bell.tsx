@@ -2,7 +2,8 @@
 
 // Cloche de notifications avec badge de compteur non lu.
 // Ouvre un panneau (Sheet) listant les notifications du ticket.
-// Se rafraîchit automatiquement toutes les 60 secondes.
+// Temps réel : flux SSE (alertes + notifications tickets) ; un polling
+// espacé (5 min) sert de filet de sécurité si le flux est indisponible.
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
@@ -28,9 +29,10 @@ import {
   marquerNotificationsLues,
 } from "@/lib/tickets/ticket-service"
 import type { NotificationTicketResponse } from "@/lib/tickets/types"
+import { connecterNotificationsSse } from "@/lib/notifications/sse"
 
-// Intervalle de rafraîchissement automatique (ms).
-const REFRESH_INTERVAL_MS = 60_000
+// Polling de secours (ms) — le temps réel passe par le SSE.
+const REFRESH_INTERVAL_MS = 5 * 60_000
 
 function formaterDate(iso: string): string {
   return new Date(iso).toLocaleString("fr-FR", {
@@ -48,7 +50,8 @@ export function NotificationBell() {
   const [chargement, setChargement] = useState(false)
   const [marquage, setMarquage] = useState(false)
 
-  // Rafraîchit le compteur en arrière-plan.
+  // Rafraîchit le compteur en arrière-plan : SSE temps réel + polling
+  // de secours espacé (connexion perdue, serveur redémarré…).
   useEffect(() => {
     let actif = true
 
@@ -60,9 +63,36 @@ export function NotificationBell() {
 
     rafraichirCompteur()
     const timer = setInterval(rafraichirCompteur, REFRESH_INTERVAL_MS)
+
+    // Flux SSE : notifications tickets et alertes de seuil/pluie.
+    const arreterSse = connecterNotificationsSse((evenement) => {
+      if (!actif) return
+      if (evenement.type === "notification-ticket") {
+        rafraichirCompteur()
+        const data = evenement.data as { titre?: string; message?: string }
+        toast.info(data?.message ?? "Nouvelle notification", {
+          description: data?.titre,
+        })
+      } else if (evenement.type === "alerte") {
+        const data = evenement.data as {
+          parcelleNom?: string
+          nb?: number
+          messages?: string[]
+        }
+        const nb = data?.nb ?? 1
+        toast.warning(
+          nb > 1
+            ? `${nb} alertes sur ${data?.parcelleNom ?? "une parcelle"}`
+            : data?.messages?.[0] ?? "Nouvelle alerte",
+          { description: nb > 1 ? data?.messages?.[0] : data?.parcelleNom },
+        )
+      }
+    })
+
     return () => {
       actif = false
       clearInterval(timer)
+      arreterSse()
     }
   }, [])
 

@@ -72,6 +72,18 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Confort : /login, /inscription et /changer-mot-de-passe tapés sur le
+  // domaine racine (ex. localhost:3000/login) sont redirigés vers l'espace
+  // clients (app.<domaine>) au lieu de renvoyer un 404.
+  if (
+    ["/login", "/inscription", "/changer-mot-de-passe"].some(
+      (p) => url.pathname === p || url.pathname.startsWith(`${p}/`)
+    )
+  ) {
+    url.host = `app.${host}`
+    return NextResponse.redirect(url)
+  }
+
   // Sinon, on laisse passer la requête normalement (page d'accueil).
   return NextResponse.next()
 }

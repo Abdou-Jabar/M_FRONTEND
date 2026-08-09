@@ -3,12 +3,15 @@
 // Tableau des parcelles avec actions (modifier / supprimer).
 // Récupère les données via l'API, gère les états chargement / erreur / vide,
 // et confirme la suppression via une boîte de dialogue.
+// Création / modification / suppression : ADMIN uniquement (aligné
+// sur les @PreAuthorize du backend) — l'agriculteur consulte seulement.
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react"
+import { MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
+import { useAuth } from "@/lib/auth/use-auth"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -48,6 +51,9 @@ import {
 } from "@/lib/parcelles/types"
 
 export function ParcellesTable() {
+  const { user } = useAuth()
+  const estAdmin = user?.role === "ADMIN"
+
   const [parcelles, setParcelles] = useState<Parcelle[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -145,14 +151,32 @@ export function ParcellesTable() {
 
   if (parcelles.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed p-8 text-sm text-muted-foreground">
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-8 text-sm text-muted-foreground">
         Aucune parcelle pour le moment.
+        {estAdmin && (
+          <Button asChild size="sm">
+            <Link href="/dashboard/parcelles/nouvelle">
+              <Plus className="size-4" />
+              Nouvelle parcelle
+            </Link>
+          </Button>
+        )}
       </div>
     )
   }
 
   return (
     <>
+      {estAdmin && (
+        <div className="flex justify-end">
+          <Button asChild>
+            <Link href="/dashboard/parcelles/nouvelle">
+              <Plus className="size-4" />
+              Nouvelle parcelle
+            </Link>
+          </Button>
+        </div>
+      )}
       <div className="rounded-xl border">
         <Table>
           <TableHeader>
@@ -161,7 +185,7 @@ export function ParcellesTable() {
               <TableHead>Type de sol</TableHead>
               <TableHead>Environnement</TableHead>
               <TableHead className="text-right">Superficie (m²)</TableHead>
-              <TableHead className="w-12" />
+              {estAdmin && <TableHead className="w-12" />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -193,38 +217,40 @@ export function ParcellesTable() {
                 <TableCell className="text-right tabular-nums">
                   {p.superficie.toLocaleString("fr-FR")}
                 </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-8"
-                        aria-label={`Actions pour ${p.nom}`}
-                      >
-                        <MoreHorizontal className="size-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <Link href={`/dashboard/parcelles/${p.id}/modifier`}>
-                          <Pencil className="size-4" />
-                          Modifier
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onSelect={(e) => {
-                          e.preventDefault()
-                          setASupprimer(p)
-                        }}
-                      >
-                        <Trash2 className="size-4" />
-                        Supprimer
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
+                {estAdmin && (
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          aria-label={`Actions pour ${p.nom}`}
+                        >
+                          <MoreHorizontal className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/dashboard/parcelles/${p.id}/modifier`}>
+                            <Pencil className="size-4" />
+                            Modifier
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onSelect={(e) => {
+                            e.preventDefault()
+                            setASupprimer(p)
+                          }}
+                        >
+                          <Trash2 className="size-4" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                )}
               </TableRow>
             ))}
           </TableBody>

@@ -29,3 +29,13 @@ export interface Culture {
   seuilAlerteId: number | null
   seuilAlerteNom: string | null
 }
+
+// Corps envoyé à POST /api/cultures. Le seuil d'alerte est sélectionné
+// automatiquement côté backend (type de culture × saison × type de sol,
+// puis seuil SAD) ; seuilAlerteId n'est qu'un fallback optionnel.
+export interface CultureRequest {
+  parcelleId: number
+  typeCultureId: number
+  saison: Saison
+  seuilAlerteId?: number
+}

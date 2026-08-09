@@ -46,6 +46,7 @@ import {
 import { SAISON_LABELS } from "@/lib/cultures/types"
 import { MeteoWidget } from "@/components/meteo-widget"
 import { marquerAlerteLue, resoudreAlerte } from "@/lib/alertes/alerte-service"
+import { useAuth } from "@/lib/auth/use-auth"
 
 function formaterDate(iso: string | null): string {
   if (!iso) return "—"
@@ -57,6 +58,9 @@ function formaterDate(iso: string | null): string {
 }
 
 export function ParcelleAgriculteur({ id }: { id: number }) {
+  const { user } = useAuth()
+  const estAdmin = user?.role === "ADMIN"
+
   const [tableau, setTableau] = useState<TableauDeBordParcelle | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -170,11 +174,13 @@ export function ParcelleAgriculteur({ id }: { id: number }) {
             Mes parcelles
           </Link>
         </Button>
-        <Button variant="outline" size="sm" asChild>
-          <Link href={`/dashboard/parcelles/${id}/modifier`}>
-            Modifier la parcelle
-          </Link>
-        </Button>
+        {estAdmin && (
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/dashboard/parcelles/${id}/modifier`}>
+              Modifier la parcelle
+            </Link>
+          </Button>
+        )}
       </div>
 
       {/* En-tête parcelle */}

@@ -52,6 +52,11 @@ const data = {
       icon: <BellIcon />,
     },
     {
+      title: "Diagnostic IA",
+      url: "/dashboard/diagnostics",
+      icon: <CameraIcon />,
+    },
+    {
       title: "Comparer",
       url: "/dashboard/comparer",
       icon: <GitCompareArrowsIcon />,

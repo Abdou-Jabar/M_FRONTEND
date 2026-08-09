@@ -3,7 +3,8 @@
 // Tableau des utilisateurs de l'organisation, avec suppression confirmée.
 
 import { useEffect, useState } from "react"
-import { MoreHorizontal, Trash2 } from "lucide-react"
+import Link from "next/link"
+import { Eye, MoreHorizontal, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -181,6 +182,12 @@ export function UtilisateursTable() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                      <DropdownMenuItem asChild>
+                        <Link href={`/dashboard/utilisateurs/${u.id}`}>
+                          <Eye className="size-4" />
+                          Voir le détail
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         variant="destructive"
                         onSelect={(e) => {

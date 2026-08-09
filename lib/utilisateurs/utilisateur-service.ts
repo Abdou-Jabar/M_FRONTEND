@@ -4,6 +4,7 @@ import { apiFetch } from "@/lib/api"
 import type {
   ProfilUpdateRequest,
   Utilisateur,
+  UtilisateurDetail,
   UtilisateurRequest,
 } from "./types"
 
@@ -50,6 +51,22 @@ export function getUtilisateurs(): Promise<Utilisateur[]> {
 
 export function getUtilisateur(id: number): Promise<Utilisateur> {
   return apiFetch<Utilisateur>(`/utilisateurs/${id}`)
+}
+
+// GET /api/utilisateurs/{id}/detail — profil, parcelles, tickets, actions.
+export function getUtilisateurDetail(id: number): Promise<UtilisateurDetail> {
+  return apiFetch<UtilisateurDetail>(`/utilisateurs/${id}/detail`)
+}
+
+// PATCH /api/utilisateurs/{id}/statut — active ou désactive le compte.
+export function changerStatutUtilisateur(
+  id: number,
+  estActif: boolean,
+): Promise<Utilisateur> {
+  return apiFetch<Utilisateur>(`/utilisateurs/${id}/statut`, {
+    method: "PATCH",
+    body: { estActif },
+  })
 }
 
 export function modifierUtilisateur(

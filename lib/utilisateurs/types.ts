@@ -9,6 +9,8 @@ export interface UtilisateurRequest {
   prenom: string
   email: string
   role: Role
+  // Parcelles à affecter dès la création (optionnel, comptes clients).
+  parcelleIds?: number[]
 }
 
 export interface Utilisateur {
@@ -30,6 +32,47 @@ export interface Utilisateur {
 export interface ProfilUpdateRequest {
   nom: string
   prenom: string
+}
+
+// ── Vue détaillée d'un utilisateur ────────────────────────────
+
+// Affectation de parcelle (ParcelleUtilisateurResponse côté backend).
+export interface ParcelleAffectation {
+  id: number
+  dateAffection: string
+  dateResiliation: string | null
+  utilisateurId: number
+  utilisateurNom: string
+  utilisateurPrenom: string
+  utilisateurEmail: string
+  parcelleId: number
+  parcelleNom: string
+}
+
+export interface TicketResume {
+  id: number
+  titre: string
+  statut: string
+  createdAt: string
+  parcelleNom: string | null
+}
+
+export interface CommandeResume {
+  id: number
+  actionneurNom: string
+  actionneurType: string | null
+  etatDemande: boolean
+  dateCommande: string
+}
+
+// Réponse de GET /api/utilisateurs/{id}/detail.
+export interface UtilisateurDetail {
+  utilisateur: Utilisateur
+  parcelles: ParcelleAffectation[]
+  tickets: TicketResume[]
+  nbTickets: number
+  commandes: CommandeResume[]
+  nbDiagnostics: number
 }
 
 // Libellés lisibles des rôles.
