@@ -23,6 +23,9 @@ export interface ChangerMotDePasseRequest {
 // Réponse renvoyée par POST /api/auth/login (AuthResponse côté backend).
 export interface AuthResponse {
   token: string
+  // Jeton de rafraîchissement longue durée (utilisé par l'app mobile ;
+  // ignoré côté web, qui s'appuie sur le JWT court uniquement).
+  refreshToken: string
   utilisateurId: number
   nom: string
   prenom: string

@@ -1,7 +1,9 @@
 // Service d'accès à l'API des parcelles.
 // S'appuie sur le client HTTP commun (lib/api), qui joint le token JWT.
 
-import { apiFetch } from "@/lib/api"
+import { apiFetch, ApiError } from "@/lib/api"
+import { API_BASE_URL, API_PREFIX } from "@/lib/config"
+import { getToken } from "@/lib/auth/storage"
 import type { Parcelle, ParcelleRequest, TypeSolDeduction } from "./types"
 
 // Déduit le type de sol à partir d'une localisation GPS (aperçu formulaire).
@@ -54,4 +56,33 @@ export function modifierParcelle(
 // Supprime (désactive) une parcelle.
 export function supprimerParcelle(id: number): Promise<void> {
   return apiFetch<void>(`/parcelles/${id}`, { method: "DELETE" })
+}
+
+// Télécharge le rapport d'exploitation PDF de la parcelle et déclenche
+// l'enregistrement du fichier dans le navigateur. Fetch binaire manuel :
+// apiFetch est réservé aux réponses JSON.
+export async function telechargerRapportParcelle(
+  id: number,
+  jours = 30,
+): Promise<void> {
+  const token = getToken()
+  const response = await fetch(
+    `${API_BASE_URL}${API_PREFIX}/parcelles/${id}/rapport-pdf?jours=${jours}`,
+    { headers: token ? { Authorization: `Bearer ${token}` } : undefined },
+  )
+  if (!response.ok) {
+    throw new ApiError(
+      "Impossible de générer le rapport PDF.",
+      response.status,
+    )
+  }
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const lien = document.createElement("a")
+  lien.href = url
+  lien.download = `rapport-parcelle-${id}.pdf`
+  document.body.appendChild(lien)
+  lien.click()
+  lien.remove()
+  URL.revokeObjectURL(url)
 }

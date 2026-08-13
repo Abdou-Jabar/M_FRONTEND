@@ -17,7 +17,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { LayoutDashboardIcon, MapIcon, CpuIcon, RadioIcon, UsersIcon, CameraIcon, FileTextIcon, Settings2Icon, LeafIcon, Building2Icon, GaugeIcon, HardHatIcon, WrenchIcon, ClipboardListIcon, SproutIcon, BellIcon, GitCompareArrowsIcon, MapPinnedIcon, TicketIcon } from "lucide-react"
+import { LayoutDashboardIcon, MapIcon, CpuIcon, RadioIcon, UsersIcon, CameraIcon, FileTextIcon, Settings2Icon, LeafIcon, Building2Icon, GaugeIcon, HardHatIcon, WrenchIcon, ClipboardListIcon, SproutIcon, BellIcon, GitCompareArrowsIcon, MapPinnedIcon, TicketIcon, ScrollTextIcon } from "lucide-react"
 
 // Élément de navigation principal.
 // `roles` liste les rôles autorisés à voir l'élément. Si absent, visible par tous.
@@ -148,6 +148,12 @@ const data = {
       title: "Carte",
       url: "/dashboard/carte",
       icon: <MapPinnedIcon />,
+      roles: ["SUPERVISEUR"],
+    },
+    {
+      title: "Journal d'audit",
+      url: "/dashboard/audit",
+      icon: <ScrollTextIcon />,
       roles: ["SUPERVISEUR"],
     },
     {

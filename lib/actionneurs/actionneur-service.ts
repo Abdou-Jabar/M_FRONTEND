@@ -26,6 +26,13 @@ export function getActionneursByDispositif(
   return apiFetch<Actionneur[]>(`/actionneurs/dispositif/${dispositifId}`)
 }
 
+// Récupère tous les actionneurs actifs d'une parcelle.
+export function getActionneursByParcelle(
+  parcelleId: number,
+): Promise<Actionneur[]> {
+  return apiFetch<Actionneur[]>(`/actionneurs/parcelle/${parcelleId}`)
+}
+
 // Met à jour un actionneur existant.
 export function modifierActionneur(
   id: number,

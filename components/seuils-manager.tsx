@@ -69,33 +69,49 @@ const SAISON_OPTIONS = (
   Object.keys(SAISON_LABELS) as Saison[]
 ).map((value) => ({ value, label: SAISON_LABELS[value] }))
 
+// Les 9 facteurs mesurés : chaque facteur a une borne min et une borne max
+// (clés `${cle}Min` / `${cle}Max` dans la requête backend).
+const FACTEURS = [
+  { cle: "temperatureAir", label: "Température air", unite: "°C" },
+  { cle: "humiditeAir", label: "Humidité air", unite: "%" },
+  { cle: "luminosite", label: "Luminosité", unite: "lux" },
+  { cle: "temperatureSol", label: "Température sol", unite: "°C" },
+  { cle: "humiditeSol", label: "Humidité sol", unite: "%" },
+  { cle: "ph", label: "pH", unite: "" },
+  { cle: "npkAzote", label: "Azote (N)", unite: "mg/kg" },
+  { cle: "npkPhosphore", label: "Phosphore (P)", unite: "mg/kg" },
+  { cle: "npkPotassium", label: "Potassium (K)", unite: "mg/kg" },
+] as const
+
+type FacteurCle = (typeof FACTEURS)[number]["cle"]
+type CleBorne = `${FacteurCle}Min` | `${FacteurCle}Max`
+
+// Affiche une plage « min–max unité » ; bornes null (seuil historique) → "—".
+function fmtPlage(
+  min: number | null,
+  max: number | null,
+  unite: string,
+): string {
+  if (min == null && max == null) return "—"
+  const suffixe = unite ? ` ${unite}` : ""
+  return `${min ?? "—"}–${max ?? "—"}${suffixe}`
+}
+
 // État du formulaire (champs numériques en texte pour la saisie).
-interface FormSeuil {
+type FormSeuil = {
   saison: Saison | ""
   typeSol: TypeSol | ""
-  humiditeMin: string
-  humiditeMax: string
-  temperatureMin: string
-  temperatureMax: string
-  phMin: string
-  phMax: string
-  npkAzoteMin: string
-  npkPhosphoreMin: string
-  npkPotassiumMin: string
-}
+} & Record<CleBorne, string>
 
 const FORM_VIDE: FormSeuil = {
   saison: "",
   typeSol: "",
-  humiditeMin: "",
-  humiditeMax: "",
-  temperatureMin: "",
-  temperatureMax: "",
-  phMin: "",
-  phMax: "",
-  npkAzoteMin: "",
-  npkPhosphoreMin: "",
-  npkPotassiumMin: "",
+  ...(Object.fromEntries(
+    FACTEURS.flatMap(({ cle }) => [
+      [`${cle}Min`, ""],
+      [`${cle}Max`, ""],
+    ]),
+  ) as Record<CleBorne, string>),
 }
 
 export function SeuilsManager() {
@@ -103,7 +119,6 @@ export function SeuilsManager() {
   const [typeCultureId, setTypeCultureId] = useState<string>("")
   const [seuils, setSeuils] = useState<SeuilAlerte[]>([])
   const [isLoadingTypes, setIsLoadingTypes] = useState(true)
-  const [isLoadingSeuils, setIsLoadingSeuils] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   // Sheet création/édition
@@ -120,12 +135,13 @@ export function SeuilsManager() {
   )
 
   // Charge le catalogue, sélectionne le premier type par défaut.
+  // Ne fait aucun setState synchrone : appelée depuis l'effet initial
+  // (isLoadingTypes démarre à true) comme depuis le bouton « Réessayer ».
   const chargerTypes = useCallback(() => {
-    setIsLoadingTypes(true)
-    setError(null)
     getTypesCulture()
       .then((data) => {
         setTypesCulture(data)
+        setError(null)
         if (data.length > 0) {
           setTypeCultureId((prev) => (prev === "" ? String(data[0].id) : prev))
         }
@@ -144,22 +160,35 @@ export function SeuilsManager() {
     chargerTypes()
   }, [chargerTypes])
 
-  // Charge les seuils du type sélectionné.
+  function reessayerTypes() {
+    setIsLoadingTypes(true)
+    setError(null)
+    chargerTypes()
+  }
+
+  // Charge les seuils du type sélectionné. L'état de chargement est dérivé
+  // (type chargé ≠ type sélectionné) pour éviter un setState dans l'effet.
+  const [typeChargeId, setTypeChargeId] = useState<string>("")
+  const isLoadingSeuils = typeCultureId !== "" && typeChargeId !== typeCultureId
+
   useEffect(() => {
     if (typeCultureId === "") return
     let actif = true
-    setIsLoadingSeuils(true)
     getSeuilsByTypeCulture(Number(typeCultureId))
-      .then((data) => { if (actif) setSeuils(data) })
+      .then((data) => {
+        if (!actif) return
+        setSeuils(data)
+        setTypeChargeId(typeCultureId)
+      })
       .catch((e) => {
         if (!actif) return
+        setTypeChargeId(typeCultureId)
         toast.error(
           e instanceof ApiError
             ? e.message
             : "Impossible de charger les seuils.",
         )
       })
-      .finally(() => { if (actif) setIsLoadingSeuils(false) })
     return () => { actif = false }
   }, [typeCultureId])
 
@@ -178,15 +207,12 @@ export function SeuilsManager() {
     setForm({
       saison: seuil.saison,
       typeSol: seuil.typeSol ?? "",
-      humiditeMin: String(seuil.humiditeMin),
-      humiditeMax: String(seuil.humiditeMax),
-      temperatureMin: String(seuil.temperatureMin),
-      temperatureMax: String(seuil.temperatureMax),
-      phMin: String(seuil.phMin),
-      phMax: String(seuil.phMax),
-      npkAzoteMin: String(seuil.npkAzoteMin),
-      npkPhosphoreMin: String(seuil.npkPhosphoreMin),
-      npkPotassiumMin: String(seuil.npkPotassuimMin),
+      ...(Object.fromEntries(
+        FACTEURS.flatMap(({ cle }) => [
+          [`${cle}Min`, seuil[`${cle}Min`] != null ? String(seuil[`${cle}Min`]) : ""],
+          [`${cle}Max`, seuil[`${cle}Max`] != null ? String(seuil[`${cle}Max`]) : ""],
+        ]),
+      ) as Record<CleBorne, string>),
     })
     setSheetOuvert(true)
   }
@@ -199,54 +225,42 @@ export function SeuilsManager() {
       return null
     }
 
-    const nombres = {
-      humiditeMin: Number(form.humiditeMin),
-      humiditeMax: Number(form.humiditeMax),
-      temperatureMin: Number(form.temperatureMin),
-      temperatureMax: Number(form.temperatureMax),
-      phMin: Number(form.phMin),
-      phMax: Number(form.phMax),
-      npkAzoteMin: Number(form.npkAzoteMin),
-      npkPhosphoreMin: Number(form.npkPhosphoreMin),
-      npkPotassiumMin: Number(form.npkPotassiumMin),
+    const bornes = {} as Record<CleBorne, number>
+    for (const { cle, label } of FACTEURS) {
+      const min = Number(form[`${cle}Min`])
+      const max = Number(form[`${cle}Max`])
+      if (
+        form[`${cle}Min`] === "" || form[`${cle}Max`] === "" ||
+        Number.isNaN(min) || Number.isNaN(max)
+      ) {
+        toast.error(
+          `Les bornes min et max de « ${label} » doivent être renseignées.`,
+        )
+        return null
+      }
+      if (min >= max) {
+        toast.error(`« ${label} » : le min doit être inférieur au max.`)
+        return null
+      }
+      bornes[`${cle}Min`] = min
+      bornes[`${cle}Max`] = max
     }
 
-    if (Object.values(nombres).some((n) => Number.isNaN(n))) {
-      toast.error("Tous les seuils doivent être renseignés (valeurs numériques).")
-      return null
-    }
-    if (nombres.humiditeMin >= nombres.humiditeMax) {
-      toast.error("L'humidité min doit être inférieure à l'humidité max.")
-      return null
-    }
-    if (nombres.temperatureMin >= nombres.temperatureMax) {
-      toast.error("La température min doit être inférieure à la température max.")
-      return null
-    }
-    if (nombres.phMin >= nombres.phMax) {
-      toast.error("Le pH min doit être inférieur au pH max.")
-      return null
-    }
-    if (nombres.phMin < 0 || nombres.phMax > 14) {
+    if (bornes.phMin < 0 || bornes.phMax > 14) {
       toast.error("Le pH doit être compris entre 0 et 14.")
       return null
     }
-    if (nombres.humiditeMin < 0 || nombres.humiditeMax > 100) {
+    if (
+      bornes.humiditeSolMin < 0 || bornes.humiditeSolMax > 100 ||
+      bornes.humiditeAirMin < 0 || bornes.humiditeAirMax > 100
+    ) {
       toast.error("L'humidité doit être comprise entre 0 et 100 %.")
       return null
     }
 
     return {
       nomCulture: `${typeCultureCourant.nom} — ${SAISON_LABELS[form.saison]} / ${TYPE_SOL_LABELS[form.typeSol]}`,
-      humiditeMin: nombres.humiditeMin,
-      humiditeMax: nombres.humiditeMax,
-      temperatureMin: nombres.temperatureMin,
-      temperatureMax: nombres.temperatureMax,
-      phMin: nombres.phMin,
-      phMax: nombres.phMax,
-      npkAzoteMin: nombres.npkAzoteMin,
-      npkPhosphoreMin: nombres.npkPhosphoreMin,
-      npkPotassuimMin: nombres.npkPotassiumMin,
+      ...bornes,
       saison: form.saison,
       typeSol: form.typeSol,
     }
@@ -309,7 +323,7 @@ export function SeuilsManager() {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed p-10 text-sm text-muted-foreground">
         <p>{error}</p>
-        <Button variant="outline" size="sm" onClick={chargerTypes}>
+        <Button variant="outline" size="sm" onClick={reessayerTypes}>
           <RefreshCwIcon className="size-4" />
           Réessayer
         </Button>
@@ -375,10 +389,15 @@ export function SeuilsManager() {
               <TableRow>
                 <TableHead>Saison</TableHead>
                 <TableHead>Type de sol</TableHead>
-                <TableHead>Humidité</TableHead>
-                <TableHead>Température</TableHead>
+                <TableHead>Humidité sol</TableHead>
+                <TableHead>Temp. air</TableHead>
                 <TableHead>pH</TableHead>
-                <TableHead className="hidden lg:table-cell">NPK min (N/P/K)</TableHead>
+                <TableHead className="hidden lg:table-cell">
+                  Luminosité
+                </TableHead>
+                <TableHead className="hidden xl:table-cell">
+                  NPK (N / P / K)
+                </TableHead>
                 <TableHead className="w-12" />
               </TableRow>
             </TableHeader>
@@ -402,17 +421,23 @@ export function SeuilsManager() {
                     </span>
                   </TableCell>
                   <TableCell>
-                    {seuil.humiditeMin}–{seuil.humiditeMax} %
+                    {fmtPlage(seuil.humiditeSolMin, seuil.humiditeSolMax, "%")}
                   </TableCell>
                   <TableCell>
-                    {seuil.temperatureMin}–{seuil.temperatureMax} °C
+                    {fmtPlage(
+                      seuil.temperatureAirMin,
+                      seuil.temperatureAirMax,
+                      "°C",
+                    )}
                   </TableCell>
-                  <TableCell>
-                    {seuil.phMin}–{seuil.phMax}
-                  </TableCell>
+                  <TableCell>{fmtPlage(seuil.phMin, seuil.phMax, "")}</TableCell>
                   <TableCell className="hidden text-muted-foreground lg:table-cell">
-                    {seuil.npkAzoteMin} / {seuil.npkPhosphoreMin} /{" "}
-                    {seuil.npkPotassuimMin} mg/kg
+                    {fmtPlage(seuil.luminositeMin, seuil.luminositeMax, "lux")}
+                  </TableCell>
+                  <TableCell className="hidden text-muted-foreground xl:table-cell">
+                    {fmtPlage(seuil.npkAzoteMin, seuil.npkAzoteMax, "")} /{" "}
+                    {fmtPlage(seuil.npkPhosphoreMin, seuil.npkPhosphoreMax, "")} /{" "}
+                    {fmtPlage(seuil.npkPotassiumMin, seuil.npkPotassiumMax, "mg/kg")}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -507,123 +532,39 @@ export function SeuilsManager() {
                 </Field>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <Field>
-                  <FieldLabel htmlFor="seuil-hmin">Humidité min (%)</FieldLabel>
-                  <Input
-                    id="seuil-hmin"
-                    type="number"
-                    step="0.1"
-                    required
-                    value={form.humiditeMin}
-                    onChange={(e) => setChamp("humiditeMin", e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="seuil-hmax">Humidité max (%)</FieldLabel>
-                  <Input
-                    id="seuil-hmax"
-                    type="number"
-                    step="0.1"
-                    required
-                    value={form.humiditeMax}
-                    onChange={(e) => setChamp("humiditeMax", e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="seuil-tmin">Température min (°C)</FieldLabel>
-                  <Input
-                    id="seuil-tmin"
-                    type="number"
-                    step="0.1"
-                    required
-                    value={form.temperatureMin}
-                    onChange={(e) => setChamp("temperatureMin", e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="seuil-tmax">Température max (°C)</FieldLabel>
-                  <Input
-                    id="seuil-tmax"
-                    type="number"
-                    step="0.1"
-                    required
-                    value={form.temperatureMax}
-                    onChange={(e) => setChamp("temperatureMax", e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="seuil-phmin">pH min</FieldLabel>
-                  <Input
-                    id="seuil-phmin"
-                    type="number"
-                    step="0.1"
-                    min={0}
-                    max={14}
-                    required
-                    value={form.phMin}
-                    onChange={(e) => setChamp("phMin", e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="seuil-phmax">pH max</FieldLabel>
-                  <Input
-                    id="seuil-phmax"
-                    type="number"
-                    step="0.1"
-                    min={0}
-                    max={14}
-                    required
-                    value={form.phMax}
-                    onChange={(e) => setChamp("phMax", e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </Field>
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <Field>
-                  <FieldLabel htmlFor="seuil-n">Azote min</FieldLabel>
-                  <Input
-                    id="seuil-n"
-                    type="number"
-                    step="0.1"
-                    required
-                    value={form.npkAzoteMin}
-                    onChange={(e) => setChamp("npkAzoteMin", e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="seuil-p">Phosphore min</FieldLabel>
-                  <Input
-                    id="seuil-p"
-                    type="number"
-                    step="0.1"
-                    required
-                    value={form.npkPhosphoreMin}
-                    onChange={(e) => setChamp("npkPhosphoreMin", e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="seuil-k">Potassium min</FieldLabel>
-                  <Input
-                    id="seuil-k"
-                    type="number"
-                    step="0.1"
-                    required
-                    value={form.npkPotassiumMin}
-                    onChange={(e) => setChamp("npkPotassiumMin", e.target.value)}
-                    disabled={isSubmitting}
-                  />
-                </Field>
-              </div>
+              {/* Bornes min/max des 9 facteurs mesurés */}
+              {FACTEURS.map(({ cle, label, unite }) => (
+                <div key={cle} className="grid grid-cols-2 gap-4">
+                  <Field>
+                    <FieldLabel htmlFor={`seuil-${cle}-min`}>
+                      {label} min{unite ? ` (${unite})` : ""}
+                    </FieldLabel>
+                    <Input
+                      id={`seuil-${cle}-min`}
+                      type="number"
+                      step="0.1"
+                      required
+                      value={form[`${cle}Min`]}
+                      onChange={(e) => setChamp(`${cle}Min`, e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor={`seuil-${cle}-max`}>
+                      {label} max{unite ? ` (${unite})` : ""}
+                    </FieldLabel>
+                    <Input
+                      id={`seuil-${cle}-max`}
+                      type="number"
+                      step="0.1"
+                      required
+                      value={form[`${cle}Max`]}
+                      onChange={(e) => setChamp(`${cle}Max`, e.target.value)}
+                      disabled={isSubmitting}
+                    />
+                  </Field>
+                </div>
+              ))}
             </FieldGroup>
             <SheetFooter className="mt-auto px-0">
               <Button type="submit" disabled={isSubmitting}>

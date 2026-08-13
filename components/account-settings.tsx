@@ -28,6 +28,7 @@ import { ApiError } from "@/lib/api"
 import { changerMotDePasse } from "@/lib/auth/auth-service"
 import { useAuth } from "@/lib/auth/use-auth"
 import {
+  getMonProfil,
   mettreAJourMonProfil,
   uploadMaPhoto,
 } from "@/lib/utilisateurs/utilisateur-service"
@@ -45,10 +46,30 @@ export function AccountSettings() {
   // Valeurs éditables du profil.
   const [nom, setNom] = useState(user?.nom ?? "")
   const [prenom, setPrenom] = useState(user?.prenom ?? "")
+  // Téléphone (alertes SMS) : absent du store d'auth, chargé depuis /me.
+  const [telephone, setTelephone] = useState("")
+  const [telephoneInitial, setTelephoneInitial] = useState("")
   const [fichier, setFichier] = useState<File | null>(null)
   const [apercu, setApercu] = useState<string | null>(null)
   const [profilBusy, setProfilBusy] = useState(false)
   const inputFichierRef = useRef<HTMLInputElement>(null)
+
+  // Charge le numéro de téléphone actuel depuis le profil complet.
+  useEffect(() => {
+    let actif = true
+    getMonProfil()
+      .then((profil) => {
+        if (!actif) return
+        setTelephone(profil.telephone ?? "")
+        setTelephoneInitial(profil.telephone ?? "")
+      })
+      .catch(() => {
+        // Non bloquant : le champ reste vide.
+      })
+    return () => {
+      actif = false
+    }
+  }, [])
 
   // Section mot de passe.
   const [ancien, setAncien] = useState("")
@@ -68,10 +89,12 @@ export function AccountSettings() {
   const nomComplet = `${user.prenom} ${user.nom}`.trim()
   const photoActuelle = apercu ?? user.photoUrl ?? ""
 
-  // Le profil est « modifié » si le nom, le prénom, ou la photo ont changé.
+  // Le profil est « modifié » si le nom, le prénom, le téléphone ou la photo
+  // ont changé.
   const profilModifie =
     nom.trim() !== user.nom ||
     prenom.trim() !== user.prenom ||
+    telephone.trim() !== telephoneInitial ||
     fichier !== null
 
   const mdpComplet =
@@ -102,11 +125,17 @@ export function AccountSettings() {
         photoUrl = maj.photoUrl
       }
 
-      // 2. Mise à jour du nom/prénom si modifiés.
+      // 2. Mise à jour du nom/prénom/téléphone si modifiés.
       const nomChange = nom.trim() !== user.nom
       const prenomChange = prenom.trim() !== user.prenom
-      if (nomChange || prenomChange) {
-        await mettreAJourMonProfil({ nom: nom.trim(), prenom: prenom.trim() })
+      const telephoneChange = telephone.trim() !== telephoneInitial
+      if (nomChange || prenomChange || telephoneChange) {
+        await mettreAJourMonProfil({
+          nom: nom.trim(),
+          prenom: prenom.trim(),
+          telephone: telephone.trim(),
+        })
+        setTelephoneInitial(telephone.trim())
       }
 
       // 3. Synchronisation du store local (sidebar, avatar, etc.).
@@ -234,6 +263,24 @@ export function AccountSettings() {
             <Field>
               <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input id="email" value={user.email} disabled readOnly />
+            </Field>
+
+            <Field>
+              <FieldLabel htmlFor="telephone">
+                Téléphone (alertes SMS)
+              </FieldLabel>
+              <Input
+                id="telephone"
+                type="tel"
+                placeholder="+22890123456"
+                value={telephone}
+                onChange={(e) => setTelephone(e.target.value)}
+                disabled={profilBusy}
+              />
+              <span className="text-xs text-muted-foreground">
+                Format international. Utilisé pour recevoir les alertes
+                critiques par SMS.
+              </span>
             </Field>
 
             <div>

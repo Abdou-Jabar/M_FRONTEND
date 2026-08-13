@@ -2,8 +2,9 @@
 
 // Panneau de gestion des actionneurs d'un dispositif :
 // - liste des actionneurs avec leur état (confirmé par ACK MQTT) ;
-// - commande manuelle ON/OFF avec minuterie optionnelle ;
-// - activation/désactivation de la régulation automatique (mode auto) ;
+// - commande manuelle ON/OFF ;
+// - activation/désactivation de la régulation automatique par seuils
+//   min/max (mode auto) ;
 // - ajout / suppression d'un actionneur ;
 // - historique des commandes (manuelles et automatiques).
 //
@@ -77,6 +78,7 @@ import {
   creerActionneur,
   envoyerCommande,
   getActionneursByDispositif,
+  getActionneursByParcelle,
   getHistoriqueCommandes,
   supprimerActionneur,
 } from "@/lib/actionneurs/actionneur-service"
@@ -96,24 +98,6 @@ const ICONES: Record<TypeActionneur, LucideIcon> = {
   VANNE_EAU: WavesIcon,
 }
 
-// Durées proposées pour la minuterie d'extinction automatique.
-const DUREES_MINUTERIE: { label: string; minutes: number }[] = [
-  { label: "Sans minuterie", minutes: 0 },
-  { label: "15 minutes", minutes: 15 },
-  { label: "30 minutes", minutes: 30 },
-  { label: "1 heure", minutes: 60 },
-  { label: "2 heures", minutes: 120 },
-]
-
-// LocalDateTime (yyyy-MM-ddTHH:mm:ss) attendu par le backend, en heure locale.
-function formatLocalDateTime(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, "0")
-  return (
-    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
-    `T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
-  )
-}
-
 function formaterDate(valeur: string | null): string {
   if (!valeur) return "—"
   const date = new Date(valeur)
@@ -124,7 +108,18 @@ function formaterDate(valeur: string | null): string {
   })
 }
 
-export function ActionneursPanneau({ dispositifId }: { dispositifId: number }) {
+// Panneau utilisable depuis un dispositif (gestion complète : ajout,
+// suppression, pilotage) ou depuis une parcelle (pilotage seul, tous
+// dispositifs confondus).
+type ActionneursPanneauProps =
+  | { dispositifId: number; parcelleId?: undefined }
+  | { parcelleId: number; dispositifId?: undefined }
+
+export function ActionneursPanneau({
+  dispositifId,
+  parcelleId,
+}: ActionneursPanneauProps) {
+  const modeParcelle = parcelleId != null
   const { user } = useAuth()
   const [actionneurs, setActionneurs] = useState<Actionneur[]>([])
   const [loading, setLoading] = useState(true)
@@ -144,17 +139,23 @@ export function ActionneursPanneau({ dispositifId }: { dispositifId: number }) {
   const [commandeEnCours, setCommandeEnCours] = useState<number | null>(null)
 
   const rafraichir = useCallback(() => {
-    return getActionneursByDispositif(dispositifId)
-      .then(setActionneurs)
-      .catch(() => {})
-  }, [dispositifId])
+    const promesse =
+      parcelleId != null
+        ? getActionneursByParcelle(parcelleId)
+        : getActionneursByDispositif(dispositifId as number)
+    return promesse.then(setActionneurs).catch(() => {})
+  }, [dispositifId, parcelleId])
 
-  // Chargement initial + rafraîchissement périodique (état ACK, minuteries,
-  // régulation automatique, extinction pluie…). `loading` est true au
-  // montage (useState), pas besoin de le re-poser dans l'effet.
+  // Chargement initial + rafraîchissement périodique (état ACK,
+  // régulation automatique par seuils, extinction pluie…). `loading` est
+  // true au montage (useState), pas besoin de le re-poser dans l'effet.
   useEffect(() => {
     let actif = true
-    getActionneursByDispositif(dispositifId)
+    const promesse =
+      parcelleId != null
+        ? getActionneursByParcelle(parcelleId)
+        : getActionneursByDispositif(dispositifId as number)
+    promesse
       .then((data) => {
         if (actif) setActionneurs(data)
       })
@@ -168,28 +169,17 @@ export function ActionneursPanneau({ dispositifId }: { dispositifId: number }) {
       actif = false
       clearInterval(timer)
     }
-  }, [dispositifId, rafraichir])
+  }, [dispositifId, parcelleId, rafraichir])
 
   // ── Actions ────────────────────────────────────────────────
 
-  async function commander(
-    actionneur: Actionneur,
-    etatDemande: boolean,
-    minutesExtinction = 0,
-  ) {
+  async function commander(actionneur: Actionneur, etatDemande: boolean) {
     if (!user) return
     setCommandeEnCours(actionneur.id)
     try {
       await envoyerCommande(actionneur.id, {
         etatDemande,
         utilisateurId: user.utilisateurId,
-        ...(etatDemande && minutesExtinction > 0
-          ? {
-              dateExtinctionAuto: formatLocalDateTime(
-                new Date(Date.now() + minutesExtinction * 60_000),
-              ),
-            }
-          : {}),
       })
       toast.success(
         `Commande envoyée : ${actionneur.nom} → ${etatDemande ? "activation" : "extinction"}. ` +
@@ -223,6 +213,7 @@ export function ActionneursPanneau({ dispositifId }: { dispositifId: number }) {
   }
 
   async function ajouter() {
+    if (dispositifId == null) return
     if (!nom.trim()) {
       toast.error("Veuillez saisir un nom.")
       return
@@ -288,15 +279,19 @@ export function ActionneursPanneau({ dispositifId }: { dispositifId: number }) {
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold tracking-tight">Actionneurs</h3>
-        <Button size="sm" onClick={() => setAjoutOuvert(true)}>
-          <PlusIcon className="size-4" />
-          Ajouter un actionneur
-        </Button>
+        {!modeParcelle && (
+          <Button size="sm" onClick={() => setAjoutOuvert(true)}>
+            <PlusIcon className="size-4" />
+            Ajouter un actionneur
+          </Button>
+        )}
       </div>
 
       {actionneurs.length === 0 ? (
         <div className="flex flex-1 items-center justify-center rounded-xl border border-dashed p-8 text-sm text-muted-foreground">
-          Aucun actionneur installé sur ce dispositif.
+          {modeParcelle
+            ? "Aucun actionneur installé sur cette parcelle."
+            : "Aucun actionneur installé sur ce dispositif."}
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
@@ -305,6 +300,7 @@ export function ActionneursPanneau({ dispositifId }: { dispositifId: number }) {
               key={a.id}
               actionneur={a}
               enCours={commandeEnCours === a.id}
+              modeParcelle={modeParcelle}
               onCommander={commander}
               onBasculerModeAuto={basculerModeAuto}
               onSupprimer={supprimer}
@@ -435,11 +431,9 @@ export function ActionneursPanneau({ dispositifId }: { dispositifId: number }) {
 interface CarteActionneurProps {
   actionneur: Actionneur
   enCours: boolean
-  onCommander: (
-    a: Actionneur,
-    etatDemande: boolean,
-    minutesExtinction?: number,
-  ) => void
+  // Vue parcelle : pilotage seul (pas de suppression) + dispositif affiché.
+  modeParcelle: boolean
+  onCommander: (a: Actionneur, etatDemande: boolean) => void
   onBasculerModeAuto: (a: Actionneur) => void
   onSupprimer: (a: Actionneur) => void
   onHistorique: (a: Actionneur) => void
@@ -448,12 +442,12 @@ interface CarteActionneurProps {
 function CarteActionneur({
   actionneur: a,
   enCours,
+  modeParcelle,
   onCommander,
   onBasculerModeAuto,
   onSupprimer,
   onHistorique,
 }: CarteActionneurProps) {
-  const [minutes, setMinutes] = useState("0")
   const Icone = ICONES[a.type] ?? PowerIcon
 
   return (
@@ -474,6 +468,7 @@ function CarteActionneur({
             <CardTitle className="text-base">{a.nom}</CardTitle>
             <p className="text-xs text-muted-foreground">
               {TYPE_ACTIONNEUR_LABELS[a.type]}
+              {modeParcelle ? ` · ${a.dispositifNom}` : ""}
             </p>
           </div>
         </div>
@@ -500,31 +495,6 @@ function CarteActionneur({
             {formaterDate(a.dernireActivation)}
           </span>
         </div>
-        {a.etatActuel && a.dateExtinctionAuto ? (
-          <div className="flex items-center justify-between">
-            <span className="text-muted-foreground">Extinction prévue</span>
-            <span className="tabular-nums">
-              {formaterDate(a.dateExtinctionAuto)}
-            </span>
-          </div>
-        ) : null}
-        {!a.etatActuel ? (
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-muted-foreground">Minuterie</span>
-            <Select value={minutes} onValueChange={setMinutes}>
-              <SelectTrigger size="sm" className="w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DUREES_MINUTERIE.map((d) => (
-                  <SelectItem key={d.minutes} value={String(d.minutes)}>
-                    {d.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        ) : null}
       </CardContent>
 
       <CardFooter className="flex items-center justify-between gap-2">
@@ -542,7 +512,7 @@ function CarteActionneur({
           <Button
             size="sm"
             disabled={enCours}
-            onClick={() => onCommander(a, true, Number(minutes))}
+            onClick={() => onCommander(a, true)}
           >
             <PowerIcon className="size-4" />
             {enCours ? "Envoi…" : "Allumer"}
@@ -557,7 +527,8 @@ function CarteActionneur({
           >
             <HistoryIcon className="size-4" />
           </Button>
-          <AlertDialog>
+          {!modeParcelle && (
+            <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
                 variant="ghost"
@@ -587,6 +558,7 @@ function CarteActionneur({
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          )}
         </div>
       </CardFooter>
     </Card>

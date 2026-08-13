@@ -76,7 +76,12 @@ export function proxy(request: NextRequest) {
   // domaine racine (ex. localhost:3000/login) sont redirigés vers l'espace
   // clients (app.<domaine>) au lieu de renvoyer un 404.
   if (
-    ["/login", "/inscription", "/changer-mot-de-passe"].some(
+    [
+      "/login",
+      "/inscription",
+      "/changer-mot-de-passe",
+      "/mot-de-passe-oublie",
+    ].some(
       (p) => url.pathname === p || url.pathname.startsWith(`${p}/`)
     )
   ) {

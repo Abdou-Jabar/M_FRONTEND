@@ -58,7 +58,9 @@ export function getServerSnapshot(): AuthState {
 // Connexion : appelle l'API, persiste le token + l'utilisateur, met à jour le store.
 export async function login(credentials: LoginRequest): Promise<AuthUser> {
   const response = await loginRequest(credentials)
-  const { token, ...user } = response
+  // Le refreshToken (destiné au mobile) est volontairement écarté : le web
+  // s'appuie sur le JWT court uniquement.
+  const { token, refreshToken: _refreshToken, ...user } = response
 
   setToken(token)
   setStoredUser(user)

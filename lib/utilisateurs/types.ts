@@ -20,6 +20,7 @@ export interface Utilisateur {
   email: string
   role: Role
   photoUrl: string | null
+  telephone: string | null
   actif: boolean
   estVerifie: boolean
   estSupprime: boolean
@@ -32,6 +33,8 @@ export interface Utilisateur {
 export interface ProfilUpdateRequest {
   nom: string
   prenom: string
+  // Format international (ex. +22890123456) — requis pour les alertes SMS.
+  telephone?: string
 }
 
 // ── Vue détaillée d'un utilisateur ────────────────────────────

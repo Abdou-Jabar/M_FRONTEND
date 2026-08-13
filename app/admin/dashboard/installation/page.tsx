@@ -34,6 +34,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { DispositifForm } from "@/components/dispositif-form"
 import { CapteurForm } from "@/components/capteur-form"
+import { ActionneurForm } from "@/components/actionneur-form"
 import { ApiError } from "@/lib/api"
 import { getMesMissions } from "@/lib/affectations/affectation-service"
 import type { Affectation } from "@/lib/affectations/types"
@@ -50,6 +51,11 @@ import {
 } from "@/lib/dispositifs/types"
 import { getCapteursByDispositif } from "@/lib/capteurs/capteur-service"
 import { TYPE_CAPTEUR_LABELS, type Capteur } from "@/lib/capteurs/types"
+import { getActionneursByDispositif } from "@/lib/actionneurs/actionneur-service"
+import {
+  TYPE_ACTIONNEUR_LABELS,
+  type Actionneur,
+} from "@/lib/actionneurs/types"
 
 export default function InstallationPage() {
   // ── Missions (organisations assignées) ──────────────────────
@@ -73,11 +79,18 @@ export default function InstallationPage() {
   const [capteursParDispositif, setCapteursParDispositif] = useState<
     Record<number, Capteur[]>
   >({})
+  const [actionneursParDispositif, setActionneursParDispositif] = useState<
+    Record<number, Actionneur[]>
+  >({})
 
   // ── Affichage des formulaires d'ajout ───────────────────────
   const [ajoutDispositif, setAjoutDispositif] = useState(false)
   // dispositifId pour lequel le formulaire d'ajout de capteur est ouvert.
   const [ajoutCapteurPour, setAjoutCapteurPour] = useState<number | null>(null)
+  // dispositifId pour lequel le formulaire d'ajout d'actionneur est ouvert.
+  const [ajoutActionneurPour, setAjoutActionneurPour] = useState<number | null>(
+    null,
+  )
 
   // Chargement initial des missions.
   useEffect(() => {
@@ -133,8 +146,16 @@ export default function InstallationPage() {
               .catch(() => [d.id, [] as Capteur[]] as const),
           ),
         )
+        const entreesActionneurs = await Promise.all(
+          ds.map((d) =>
+            getActionneursByDispositif(d.id)
+              .then((as) => [d.id, as] as const)
+              .catch(() => [d.id, [] as Actionneur[]] as const),
+          ),
+        )
         setDispositifs(ds)
         setCapteursParDispositif(Object.fromEntries(entrees))
+        setActionneursParDispositif(Object.fromEntries(entreesActionneurs))
       })
       .catch((e) =>
         setDispositifsError(
@@ -153,8 +174,10 @@ export default function InstallationPage() {
     setParcelles([])
     setDispositifs([])
     setCapteursParDispositif({})
+    setActionneursParDispositif({})
     setAjoutDispositif(false)
     setAjoutCapteurPour(null)
+    setAjoutActionneurPour(null)
     chargerParcelles(Number(value))
   }
 
@@ -162,8 +185,10 @@ export default function InstallationPage() {
     setParcelleId(value)
     setDispositifs([])
     setCapteursParDispositif({})
+    setActionneursParDispositif({})
     setAjoutDispositif(false)
     setAjoutCapteurPour(null)
+    setAjoutActionneurPour(null)
     chargerDispositifs(Number(value))
   }
 
@@ -171,6 +196,7 @@ export default function InstallationPage() {
   function handleDispositifCree(d: Dispositif) {
     setDispositifs((prev) => [...prev, d])
     setCapteursParDispositif((prev) => ({ ...prev, [d.id]: [] }))
+    setActionneursParDispositif((prev) => ({ ...prev, [d.id]: [] }))
     setAjoutDispositif(false)
   }
 
@@ -183,6 +209,15 @@ export default function InstallationPage() {
     setAjoutCapteurPour(null)
   }
 
+  // Actionneur créé : on l'ajoute sous son dispositif et on ferme le formulaire.
+  function handleActionneurCree(a: Actionneur) {
+    setActionneursParDispositif((prev) => ({
+      ...prev,
+      [a.dispositifId]: [...(prev[a.dispositifId] ?? []), a],
+    }))
+    setAjoutActionneurPour(null)
+  }
+
   const parcelleChoisie = parcelles.find((p) => String(p.id) === parcelleId)
 
   return (
@@ -190,8 +225,8 @@ export default function InstallationPage() {
       <div className="flex flex-col gap-1">
         <h2 className="text-2xl font-semibold tracking-tight">Installation</h2>
         <p className="text-sm text-muted-foreground">
-          Installez les dispositifs et capteurs sur les parcelles des
-          organisations qui vous sont assignées.
+          Installez les dispositifs, capteurs et actionneurs sur les parcelles
+          des organisations qui vous sont assignées.
         </p>
       </div>
 
@@ -284,7 +319,8 @@ export default function InstallationPage() {
                 <div className="flex flex-col gap-1">
                   <CardTitle>3. Matériel — {parcelleChoisie.nom}</CardTitle>
                   <CardDescription>
-                    Ajoutez des dispositifs et leurs capteurs sur cette parcelle.
+                    Ajoutez des dispositifs, puis leurs capteurs et leurs
+                    actionneurs sur cette parcelle.
                   </CardDescription>
                 </div>
                 {!ajoutDispositif ? (
@@ -330,6 +366,7 @@ export default function InstallationPage() {
                 ) : (
                   dispositifs.map((d) => {
                     const capteurs = capteursParDispositif[d.id] ?? []
+                    const actionneurs = actionneursParDispositif[d.id] ?? []
                     return (
                       <div key={d.id} className="rounded-lg border p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -344,15 +381,26 @@ export default function InstallationPage() {
                               {d.adresseMac}
                             </span>
                           </div>
-                          {ajoutCapteurPour !== d.id ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setAjoutCapteurPour(d.id)}
-                            >
-                              Ajouter un capteur
-                            </Button>
-                          ) : null}
+                          <div className="flex flex-wrap gap-2">
+                            {ajoutCapteurPour !== d.id ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAjoutCapteurPour(d.id)}
+                              >
+                                Ajouter un capteur
+                              </Button>
+                            ) : null}
+                            {ajoutActionneurPour !== d.id ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setAjoutActionneurPour(d.id)}
+                              >
+                                Ajouter un actionneur
+                              </Button>
+                            ) : null}
+                          </div>
                         </div>
 
                         <Separator className="my-3" />
@@ -396,6 +444,51 @@ export default function InstallationPage() {
                             <CapteurForm
                               dispositifs={[d]}
                               onSuccess={handleCapteurCree}
+                            />
+                          </div>
+                        ) : null}
+
+                        <Separator className="my-3" />
+
+                        {/* Actionneurs du dispositif */}
+                        {actionneurs.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">
+                            Aucun actionneur sur ce dispositif.
+                          </p>
+                        ) : (
+                          <ul className="flex flex-col gap-1">
+                            {actionneurs.map((a) => (
+                              <li
+                                key={a.id}
+                                className="flex items-center justify-between text-sm"
+                              >
+                                <span>{a.nom}</span>
+                                <span className="text-muted-foreground">
+                                  {TYPE_ACTIONNEUR_LABELS[a.type]}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+
+                        {/* Formulaire d'ajout d'actionneur */}
+                        {ajoutActionneurPour === d.id ? (
+                          <div className="mt-4 rounded-lg border bg-muted/30 p-4">
+                            <div className="mb-4 flex items-center justify-between">
+                              <h4 className="text-sm font-medium">
+                                Nouvel actionneur sur {d.nom}
+                              </h4>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setAjoutActionneurPour(null)}
+                              >
+                                Fermer
+                              </Button>
+                            </div>
+                            <ActionneurForm
+                              dispositifs={[d]}
+                              onSuccess={handleActionneurCree}
                             />
                           </div>
                         ) : null}

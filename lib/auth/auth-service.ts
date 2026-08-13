@@ -28,3 +28,26 @@ export function changerMotDePasse(
   })
 }
 
+// POST /api/auth/mot-de-passe-oublie/demander-code — étape 1 (public).
+// Répond toujours 204, que l'email existe ou non (anti-énumération).
+export function demanderCodeReinitialisation(email: string): Promise<void> {
+  return apiFetch<void>("/auth/mot-de-passe-oublie/demander-code", {
+    method: "POST",
+    body: { email },
+    auth: false,
+  })
+}
+
+// POST /api/auth/mot-de-passe-oublie/reinitialiser — étape 2 (public).
+export function reinitialiserMotDePasse(payload: {
+  email: string
+  code: string
+  nouveauMotDePasse: string
+}): Promise<void> {
+  return apiFetch<void>("/auth/mot-de-passe-oublie/reinitialiser", {
+    method: "POST",
+    body: payload,
+    auth: false,
+  })
+}
+

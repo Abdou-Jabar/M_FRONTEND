@@ -11,6 +11,7 @@ import {
   ArrowLeftIcon,
   BellOffIcon,
   CheckCircle2Icon,
+  DownloadIcon,
   EyeIcon,
   SproutIcon,
 } from "lucide-react"
@@ -26,6 +27,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ActionneursPanneau } from "@/components/actionneurs-panneau"
 import { ParcelleStatistiques } from "@/components/parcelle-statistiques"
 import { cn } from "@/lib/utils"
 import { ApiError } from "@/lib/api"
@@ -33,6 +35,7 @@ import {
   getTableauDeBordParcelle,
   type TableauDeBordParcelle,
 } from "@/lib/parcelles/tableau-de-bord"
+import { telechargerRapportParcelle } from "@/lib/parcelles/parcelle-service"
 import {
   ENVIRONNEMENT_LABELS,
   TYPE_SOL_LABELS,
@@ -181,6 +184,20 @@ export function ParcelleAgriculteur({ id }: { id: number }) {
             </Link>
           </Button>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            toast.promise(telechargerRapportParcelle(id, 30), {
+              loading: "Génération du rapport…",
+              success: "Rapport PDF téléchargé.",
+              error: "Génération impossible. Réessayez.",
+            })
+          }}
+        >
+          <DownloadIcon className="size-4" />
+          Rapport PDF
+        </Button>
       </div>
 
       {/* En-tête parcelle */}
@@ -332,6 +349,9 @@ export function ParcelleAgriculteur({ id }: { id: number }) {
           </div>
         )}
       </div>
+
+      {/* Pilotage des actionneurs de la parcelle (ON/OFF, minuterie, auto) */}
+      <ActionneursPanneau parcelleId={id} />
 
       {/* Graphes des mesures (composant existant réutilisé) */}
       <div className="flex flex-col gap-3">
