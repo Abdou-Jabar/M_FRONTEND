@@ -46,6 +46,8 @@ import {
   STATUT_DISPOSITIF_LABELS,
   type Dispositif,
 } from "@/lib/dispositifs/types"
+import { useRecherchePagination } from "@/hooks/use-recherche-pagination"
+import { BarreRecherche, PaginationTable } from "@/components/table-outils"
 
 function formaterPing(valeur: string | null): string {
   if (!valeur) return "—"
@@ -64,6 +66,14 @@ export function DispositifsTable() {
 
   const [aSupprimer, setASupprimer] = useState<Dispositif | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  const rp = useRecherchePagination(
+    dispositifs,
+    (d) =>
+      `${d.nom} ${d.adresseMac} ${d.parcelleNom} ${
+        STATUT_DISPOSITIF_LABELS[d.statut]
+      }`,
+  )
 
   // Chargement initial : chaîne de promesse inline (aucun setState synchrone
   // dans le corps de l'effet).
@@ -162,6 +172,11 @@ export function DispositifsTable() {
 
   return (
     <>
+      <BarreRecherche
+        valeur={rp.recherche}
+        onChange={rp.setRecherche}
+        placeholder="Rechercher un dispositif…"
+      />
       <div className="rounded-xl border">
         <Table>
           <TableHeader>
@@ -175,7 +190,17 @@ export function DispositifsTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {dispositifs.map((d) => (
+            {rp.visibles.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  Aucun dispositif ne correspond à la recherche.
+                </TableCell>
+              </TableRow>
+            )}
+            {rp.visibles.map((d) => (
               <TableRow key={d.id}>
                 <TableCell className="font-medium">
                   <Link
@@ -237,6 +262,14 @@ export function DispositifsTable() {
           </TableBody>
         </Table>
       </div>
+
+      <PaginationTable
+        page={rp.page}
+        totalPages={rp.totalPages}
+        totalFiltres={rp.totalFiltres}
+        pageSize={rp.pageSize}
+        onPageChange={rp.setPage}
+      />
 
       <AlertDialog
         open={aSupprimer !== null}

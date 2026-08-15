@@ -35,6 +35,7 @@ import {
   type Culture,
   type StatutCulture,
 } from "@/lib/cultures/types"
+import { PaginationTable } from "@/components/table-outils"
 
 const STATUT_BADGE: Record<
   StatutCulture,
@@ -79,6 +80,7 @@ export function MesCultures() {
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [filtre, setFiltre] = useState<StatutCulture | "TOUTES">("EN_COURS")
+  const [page, setPage] = useState(0)
 
   useEffect(() => {
     let actif = true
@@ -135,6 +137,19 @@ export function MesCultures() {
       ? cultures
       : cultures.filter((c) => c.statut === filtre)
 
+  const PAGE_SIZE = 10
+  const totalPages = Math.max(1, Math.ceil(affichees.length / PAGE_SIZE))
+  const pageEffective = Math.min(page, totalPages - 1)
+  const pageCultures = affichees.slice(
+    pageEffective * PAGE_SIZE,
+    (pageEffective + 1) * PAGE_SIZE,
+  )
+
+  function changerFiltre(f: StatutCulture | "TOUTES") {
+    setFiltre(f)
+    setPage(0)
+  }
+
   const nbEnCours = cultures.filter((c) => c.statut === "EN_COURS").length
 
   if (isLoading) {
@@ -163,7 +178,7 @@ export function MesCultures() {
           <Button
             variant={filtre === "EN_COURS" ? "default" : "outline"}
             size="sm"
-            onClick={() => setFiltre("EN_COURS")}
+            onClick={() => changerFiltre("EN_COURS")}
           >
             En cours
             {nbEnCours > 0 && (
@@ -175,14 +190,14 @@ export function MesCultures() {
           <Button
             variant={filtre === "RECOLTEE" ? "default" : "outline"}
             size="sm"
-            onClick={() => setFiltre("RECOLTEE")}
+            onClick={() => changerFiltre("RECOLTEE")}
           >
             Récoltées
           </Button>
           <Button
             variant={filtre === "TOUTES" ? "default" : "outline"}
             size="sm"
-            onClick={() => setFiltre("TOUTES")}
+            onClick={() => changerFiltre("TOUTES")}
           >
             Toutes ({cultures.length})
           </Button>
@@ -202,7 +217,7 @@ export function MesCultures() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {affichees.map((c) => (
+          {pageCultures.map((c) => (
             <CarteCulture
               key={c.id}
               culture={c}
@@ -211,6 +226,13 @@ export function MesCultures() {
               onAbandonner={handleAbandonner}
             />
           ))}
+          <PaginationTable
+            page={pageEffective}
+            totalPages={totalPages}
+            totalFiltres={affichees.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>

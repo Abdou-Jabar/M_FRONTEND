@@ -36,6 +36,8 @@ import {
   STATUT_ORGANISATION_LABELS,
   type Organisation,
 } from "@/lib/organisations/types"
+import { useRecherchePagination } from "@/hooks/use-recherche-pagination"
+import { BarreRecherche, PaginationTable } from "@/components/table-outils"
 
 function formaterDate(valeur: string): string {
   const date = new Date(valeur)
@@ -47,6 +49,14 @@ export function OrganisationsTable() {
   const [organisations, setOrganisations] = useState<Organisation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const rp = useRecherchePagination(
+    organisations,
+    (o) =>
+      `${o.nom} ${o.adminNomComplet ?? ""} ${o.adminEmail ?? ""} ${
+        STATUT_ORGANISATION_LABELS[o.statut]
+      }`,
+  )
 
   useEffect(() => {
     let actif = true
@@ -134,19 +144,35 @@ export function OrganisationsTable() {
   }
 
   return (
-    <div className="rounded-xl border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Organisation</TableHead>
-            <TableHead>Administrateur</TableHead>
-            <TableHead>Statut</TableHead>
-            <TableHead>Créée le</TableHead>
-            <TableHead className="w-12" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {organisations.map((org) => (
+    <div className="flex flex-col gap-3">
+      <BarreRecherche
+        valeur={rp.recherche}
+        onChange={rp.setRecherche}
+        placeholder="Rechercher une organisation…"
+      />
+      <div className="rounded-xl border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Organisation</TableHead>
+              <TableHead>Administrateur</TableHead>
+              <TableHead>Statut</TableHead>
+              <TableHead>Créée le</TableHead>
+              <TableHead className="w-12" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rp.visibles.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  Aucune organisation ne correspond à la recherche.
+                </TableCell>
+              </TableRow>
+            )}
+            {rp.visibles.map((org) => (
             <TableRow key={org.id}>
               <TableCell className="font-medium">{org.nom}</TableCell>
               <TableCell>
@@ -229,6 +255,15 @@ export function OrganisationsTable() {
           ))}
         </TableBody>
       </Table>
+      </div>
+
+      <PaginationTable
+        page={rp.page}
+        totalPages={rp.totalPages}
+        totalFiltres={rp.totalFiltres}
+        pageSize={rp.pageSize}
+        onPageChange={rp.setPage}
+      />
     </div>
   )
 }

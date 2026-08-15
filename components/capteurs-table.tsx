@@ -43,6 +43,8 @@ import {
   supprimerCapteur,
 } from "@/lib/capteurs/capteur-service"
 import { TYPE_CAPTEUR_LABELS, type Capteur } from "@/lib/capteurs/types"
+import { useRecherchePagination } from "@/hooks/use-recherche-pagination"
+import { BarreRecherche, PaginationTable } from "@/components/table-outils"
 
 export function CapteursTable() {
   const [capteurs, setCapteurs] = useState<Capteur[]>([])
@@ -51,6 +53,14 @@ export function CapteursTable() {
 
   const [aSupprimer, setASupprimer] = useState<Capteur | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  const rp = useRecherchePagination(
+    capteurs,
+    (c) =>
+      `${c.nom} ${c.modele ?? ""} ${TYPE_CAPTEUR_LABELS[c.type]} ${
+        c.dispositifNom
+      } ${c.parcelleNom}`,
+  )
 
   // Chargement initial : chaîne de promesse inline (aucun setState synchrone
   // dans le corps de l'effet).
@@ -163,6 +173,11 @@ export function CapteursTable() {
 
   return (
     <>
+      <BarreRecherche
+        valeur={rp.recherche}
+        onChange={rp.setRecherche}
+        placeholder="Rechercher un capteur…"
+      />
       <div className="rounded-xl border">
         <Table>
           <TableHeader>
@@ -177,7 +192,17 @@ export function CapteursTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {capteurs.map((c) => (
+            {rp.visibles.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={7}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  Aucun capteur ne correspond à la recherche.
+                </TableCell>
+              </TableRow>
+            )}
+            {rp.visibles.map((c) => (
               <TableRow key={c.id}>
                 <TableCell className="font-medium">
                   <Link
@@ -258,6 +283,14 @@ export function CapteursTable() {
           </TableBody>
         </Table>
       </div>
+
+      <PaginationTable
+        page={rp.page}
+        totalPages={rp.totalPages}
+        totalFiltres={rp.totalFiltres}
+        pageSize={rp.pageSize}
+        onPageChange={rp.setPage}
+      />
 
       <AlertDialog
         open={aSupprimer !== null}

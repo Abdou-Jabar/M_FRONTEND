@@ -49,6 +49,8 @@ import {
   TYPE_SOL_LABELS,
   type Parcelle,
 } from "@/lib/parcelles/types"
+import { useRecherchePagination } from "@/hooks/use-recherche-pagination"
+import { BarreRecherche, PaginationTable } from "@/components/table-outils"
 
 export function ParcellesTable() {
   const { user } = useAuth()
@@ -61,6 +63,14 @@ export function ParcellesTable() {
   // Parcelle en attente de confirmation de suppression.
   const [aSupprimer, setASupprimer] = useState<Parcelle | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+
+  const rp = useRecherchePagination(
+    parcelles,
+    (p) =>
+      `${p.nom} ${p.description ?? ""} ${TYPE_SOL_LABELS[p.typeSol]} ${
+        ENVIRONNEMENT_LABELS[p.environnement]
+      }`,
+  )
 
   // Chargement initial : chaîne de promesse inline (aucun setState synchrone
   // dans le corps de l'effet).
@@ -167,16 +177,21 @@ export function ParcellesTable() {
 
   return (
     <>
-      {estAdmin && (
-        <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <BarreRecherche
+          valeur={rp.recherche}
+          onChange={rp.setRecherche}
+          placeholder="Rechercher une parcelle…"
+        />
+        {estAdmin && (
           <Button asChild>
             <Link href="/dashboard/parcelles/nouvelle">
               <Plus className="size-4" />
               Nouvelle parcelle
             </Link>
           </Button>
-        </div>
-      )}
+        )}
+      </div>
       <div className="rounded-xl border">
         <Table>
           <TableHeader>
@@ -189,7 +204,17 @@ export function ParcellesTable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {parcelles.map((p) => (
+            {rp.visibles.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={estAdmin ? 5 : 4}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  Aucune parcelle ne correspond à la recherche.
+                </TableCell>
+              </TableRow>
+            )}
+            {rp.visibles.map((p) => (
               <TableRow key={p.id}>
                 <TableCell className="font-medium">
                   <Link
@@ -256,6 +281,14 @@ export function ParcellesTable() {
           </TableBody>
         </Table>
       </div>
+
+      <PaginationTable
+        page={rp.page}
+        totalPages={rp.totalPages}
+        totalFiltres={rp.totalFiltres}
+        pageSize={rp.pageSize}
+        onPageChange={rp.setPage}
+      />
 
       <AlertDialog
         open={aSupprimer !== null}

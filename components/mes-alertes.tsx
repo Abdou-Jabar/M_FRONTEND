@@ -31,6 +31,7 @@ import {
   type Alerte,
   type NiveauAlerte,
 } from "@/lib/alertes/types"
+import { PaginationTable } from "@/components/table-outils"
 
 function formaterDate(iso: string): string {
   return new Date(iso).toLocaleString("fr-FR", {
@@ -50,6 +51,7 @@ export function MesAlertes() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
+  const [page, setPage] = useState(0)
 
   useEffect(() => {
     let actif = true
@@ -104,6 +106,19 @@ export function MesAlertes() {
     return true
   })
 
+  const PAGE_SIZE = 10
+  const totalPages = Math.max(1, Math.ceil(affichees.length / PAGE_SIZE))
+  const pageEffective = Math.min(page, totalPages - 1)
+  const pageAlertes = affichees.slice(
+    pageEffective * PAGE_SIZE,
+    (pageEffective + 1) * PAGE_SIZE,
+  )
+
+  function changerFiltre(f: "toutes" | "nonLues" | "nonResolues") {
+    setFiltre(f)
+    setPage(0)
+  }
+
   const nbNonResolues = alertes.filter((a) => !a.resolue).length
   const nbNonLues = alertes.filter((a) => !a.lue).length
 
@@ -132,7 +147,7 @@ export function MesAlertes() {
         <Button
           variant={filtre === "nonResolues" ? "default" : "outline"}
           size="sm"
-          onClick={() => setFiltre("nonResolues")}
+          onClick={() => changerFiltre("nonResolues")}
         >
           Non résolues
           {nbNonResolues > 0 && (
@@ -144,7 +159,7 @@ export function MesAlertes() {
         <Button
           variant={filtre === "nonLues" ? "default" : "outline"}
           size="sm"
-          onClick={() => setFiltre("nonLues")}
+          onClick={() => changerFiltre("nonLues")}
         >
           Non lues
           {nbNonLues > 0 && (
@@ -156,7 +171,7 @@ export function MesAlertes() {
         <Button
           variant={filtre === "toutes" ? "default" : "outline"}
           size="sm"
-          onClick={() => setFiltre("toutes")}
+          onClick={() => changerFiltre("toutes")}
         >
           Toutes ({alertes.length})
         </Button>
@@ -175,7 +190,7 @@ export function MesAlertes() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {affichees.map((alerte) => (
+          {pageAlertes.map((alerte) => (
             <CarteAlerte
               key={alerte.id}
               alerte={alerte}
@@ -184,6 +199,13 @@ export function MesAlertes() {
               onResoudre={handleResoudre}
             />
           ))}
+          <PaginationTable
+            page={pageEffective}
+            totalPages={totalPages}
+            totalFiltres={affichees.length}
+            pageSize={PAGE_SIZE}
+            onPageChange={setPage}
+          />
         </div>
       )}
     </div>

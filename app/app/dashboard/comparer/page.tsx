@@ -25,6 +25,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { AnalyseSadPanneau } from "@/components/analyse-sad"
 import { ComparaisonParcelles } from "@/components/comparaison-parcelles"
 import { MesureChartBarre } from "@/components/mesure-chart-barre"
 import { ApiError } from "@/lib/api"
@@ -267,6 +268,11 @@ export default function ComparerPage() {
             jours={Number(jours)}
           />
         </div>
+      )}
+
+      {/* Analyse SAD — scores + rapport IA (indépendante des graphes) */}
+      {selected.length >= 2 && (
+        <AnalyseSadPanneau parcelleIds={selected} jours={Number(jours)} />
       )}
     </div>
   )

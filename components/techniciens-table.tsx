@@ -20,11 +20,18 @@ import {
 import { ApiError } from "@/lib/api"
 import { getUtilisateurs } from "@/lib/utilisateurs/utilisateur-service"
 import type { Utilisateur } from "@/lib/utilisateurs/types"
+import { useRecherchePagination } from "@/hooks/use-recherche-pagination"
+import { BarreRecherche, PaginationTable } from "@/components/table-outils"
 
 export function TechniciensTable() {
   const [techniciens, setTechniciens] = useState<Utilisateur[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const rp = useRecherchePagination(
+    techniciens,
+    (t) => `${t.prenom} ${t.nom} ${t.email}`,
+  )
 
   useEffect(() => {
     let actif = true
@@ -77,18 +84,34 @@ export function TechniciensTable() {
   }
 
   return (
-    <div className="rounded-xl border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Nom</TableHead>
-            <TableHead>E-mail</TableHead>
-            <TableHead>Statut</TableHead>
-            <TableHead className="text-right">Missions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {techniciens.map((t) => (
+    <div className="flex flex-col gap-3">
+      <BarreRecherche
+        valeur={rp.recherche}
+        onChange={rp.setRecherche}
+        placeholder="Rechercher un technicien…"
+      />
+      <div className="rounded-xl border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nom</TableHead>
+              <TableHead>E-mail</TableHead>
+              <TableHead>Statut</TableHead>
+              <TableHead className="text-right">Missions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rp.visibles.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  Aucun technicien ne correspond à la recherche.
+                </TableCell>
+              </TableRow>
+            )}
+            {rp.visibles.map((t) => (
             <TableRow key={t.id}>
               <TableCell className="font-medium">
                 <Link
@@ -115,6 +138,15 @@ export function TechniciensTable() {
           ))}
         </TableBody>
       </Table>
+      </div>
+
+      <PaginationTable
+        page={rp.page}
+        totalPages={rp.totalPages}
+        totalFiltres={rp.totalFiltres}
+        pageSize={rp.pageSize}
+        onPageChange={rp.setPage}
+      />
     </div>
   )
 }
