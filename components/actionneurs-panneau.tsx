@@ -80,8 +80,10 @@ import {
   getActionneursByDispositif,
   getActionneursByParcelle,
   getHistoriqueCommandes,
+  getHistoriqueCommandesParcelle,
   supprimerActionneur,
 } from "@/lib/actionneurs/actionneur-service"
+import type { Page } from "@/lib/tickets/types"
 import {
   ORIGINE_COMMANDE_LABELS,
   TYPE_ACTIONNEUR_LABELS,
@@ -130,10 +132,17 @@ export function ActionneursPanneau({
   const [type, setType] = useState<TypeActionneur | "">("")
   const [enregistrement, setEnregistrement] = useState(false)
 
-  // Historique
+  // Historique d'un actionneur (paginé)
   const [historiqueDe, setHistoriqueDe] = useState<Actionneur | null>(null)
-  const [historique, setHistorique] = useState<CommandeActionneur[]>([])
+  const [historique, setHistorique] =
+    useState<Page<CommandeActionneur> | null>(null)
   const [historiqueLoading, setHistoriqueLoading] = useState(false)
+
+  // Historique agrégé de la parcelle (paginé)
+  const [histParcelleOuvert, setHistParcelleOuvert] = useState(false)
+  const [histParcelle, setHistParcelle] =
+    useState<Page<CommandeActionneur> | null>(null)
+  const [histParcelleLoading, setHistParcelleLoading] = useState(false)
 
   // Commande en cours (id de l'actionneur) pour désactiver les boutons.
   const [commandeEnCours, setCommandeEnCours] = useState<number | null>(null)
@@ -251,16 +260,33 @@ export function ActionneursPanneau({
     }
   }
 
-  async function ouvrirHistorique(actionneur: Actionneur) {
+  async function ouvrirHistorique(actionneur: Actionneur, page = 0) {
     setHistoriqueDe(actionneur)
     setHistoriqueLoading(true)
     try {
-      setHistorique(await getHistoriqueCommandes(actionneur.id))
+      setHistorique(await getHistoriqueCommandes(actionneur.id, page))
     } catch {
-      setHistorique([])
+      setHistorique(null)
     } finally {
       setHistoriqueLoading(false)
     }
+  }
+
+  async function chargerHistoriqueParcelle(page: number) {
+    if (parcelleId == null) return
+    setHistParcelleLoading(true)
+    try {
+      setHistParcelle(await getHistoriqueCommandesParcelle(parcelleId, page))
+    } catch {
+      setHistParcelle(null)
+    } finally {
+      setHistParcelleLoading(false)
+    }
+  }
+
+  function ouvrirHistoriqueParcelle() {
+    setHistParcelleOuvert(true)
+    void chargerHistoriqueParcelle(0)
   }
 
   // ── Rendu ──────────────────────────────────────────────────
@@ -279,7 +305,12 @@ export function ActionneursPanneau({
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold tracking-tight">Actionneurs</h3>
-        {!modeParcelle && (
+        {modeParcelle ? (
+          <Button size="sm" variant="outline" onClick={ouvrirHistoriqueParcelle}>
+            <HistoryIcon className="size-4" />
+            Historique des commandes
+          </Button>
+        ) : (
           <Button size="sm" onClick={() => setAjoutOuvert(true)}>
             <PlusIcon className="size-4" />
             Ajouter un actionneur
@@ -357,6 +388,109 @@ export function ActionneursPanneau({
         </SheetContent>
       </Sheet>
 
+      {/* ── Sheet historique de la parcelle (paginé) ─────── */}
+      <Sheet open={histParcelleOuvert} onOpenChange={setHistParcelleOuvert}>
+        <SheetContent className="flex w-full flex-col gap-4 sm:max-w-xl">
+          <SheetHeader>
+            <SheetTitle>Historique des commandes de la parcelle</SheetTitle>
+            <SheetDescription>
+              Toutes les commandes confirmées (manuelles et automatiques),
+              tous actionneurs confondus.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4">
+            {histParcelleLoading ? (
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-8 w-full" />
+                ))}
+              </div>
+            ) : !histParcelle || histParcelle.content.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                Aucune commande enregistrée sur cette parcelle.
+              </p>
+            ) : (
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Actionneur</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Origine</TableHead>
+                      <TableHead>Par</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {histParcelle.content.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="whitespace-nowrap tabular-nums">
+                          {formaterDate(c.dateCommande)}
+                        </TableCell>
+                        <TableCell>
+                          {c.actionneurNom ?? "—"}
+                          {c.actionneurType ? (
+                            <span className="block text-xs text-muted-foreground">
+                              {TYPE_ACTIONNEUR_LABELS[c.actionneurType]}
+                            </span>
+                          ) : null}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={c.etatDemande ? "default" : "secondary"}
+                          >
+                            {c.etatDemande ? "Allumé" : "Éteint"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {ORIGINE_COMMANDE_LABELS[c.origine] ?? c.origine}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {c.utilisateurNomComplet ?? "Système"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {histParcelle.totalPages > 1 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      Page {histParcelle.number + 1} /{" "}
+                      {histParcelle.totalPages} ·{" "}
+                      {histParcelle.totalElements} commandes
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={histParcelle.number === 0}
+                        onClick={() =>
+                          chargerHistoriqueParcelle(histParcelle.number - 1)
+                        }
+                      >
+                        Précédent
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={
+                          histParcelle.number >= histParcelle.totalPages - 1
+                        }
+                        onClick={() =>
+                          chargerHistoriqueParcelle(histParcelle.number + 1)
+                        }
+                      >
+                        Suivant
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* ── Sheet historique ──────────────────────────────── */}
       <Sheet
         open={historiqueDe !== null}
@@ -374,50 +508,83 @@ export function ActionneursPanneau({
               automatiques).
             </SheetDescription>
           </SheetHeader>
-          <div className="overflow-y-auto px-4 pb-4">
+          <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 pb-4">
             {historiqueLoading ? (
               <div className="flex flex-col gap-2">
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Skeleton key={i} className="h-8 w-full" />
                 ))}
               </div>
-            ) : historique.length === 0 ? (
+            ) : !historique || historique.content.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">
                 Aucune commande enregistrée.
               </p>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Action</TableHead>
-                    <TableHead>Origine</TableHead>
-                    <TableHead>Par</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {historique.map((c) => (
-                    <TableRow key={c.id}>
-                      <TableCell className="whitespace-nowrap tabular-nums">
-                        {formaterDate(c.dateCommande)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={c.etatDemande ? "default" : "secondary"}
-                        >
-                          {c.etatDemande ? "Allumé" : "Éteint"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {ORIGINE_COMMANDE_LABELS[c.origine] ?? c.origine}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {c.utilisateurNomComplet ?? "Système"}
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Action</TableHead>
+                      <TableHead>Origine</TableHead>
+                      <TableHead>Par</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {historique.content.map((c) => (
+                      <TableRow key={c.id}>
+                        <TableCell className="whitespace-nowrap tabular-nums">
+                          {formaterDate(c.dateCommande)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={c.etatDemande ? "default" : "secondary"}
+                          >
+                            {c.etatDemande ? "Allumé" : "Éteint"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {ORIGINE_COMMANDE_LABELS[c.origine] ?? c.origine}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {c.utilisateurNomComplet ?? "Système"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {historique.totalPages > 1 && historiqueDe && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      Page {historique.number + 1} / {historique.totalPages}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={historique.number === 0}
+                        onClick={() =>
+                          ouvrirHistorique(historiqueDe, historique.number - 1)
+                        }
+                      >
+                        Précédent
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={
+                          historique.number >= historique.totalPages - 1
+                        }
+                        onClick={() =>
+                          ouvrirHistorique(historiqueDe, historique.number + 1)
+                        }
+                      >
+                        Suivant
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </SheetContent>

@@ -1,16 +1,43 @@
-// Service d'accès à l'API des alertes.
+// Service d'accès à l'API des alertes (pagination côté serveur).
 
 import { apiFetch } from "@/lib/api"
-import type { Alerte } from "./types"
+import type { Page } from "@/lib/tickets/types"
+import type { Alerte, NiveauAlerte } from "./types"
 
-// GET /api/alertes — toutes les alertes des parcelles accessibles.
-export function getMesAlertes(): Promise<Alerte[]> {
-  return apiFetch<Alerte[]>("/alertes")
+// Filtre optionnel des listes (FiltreAlerteEnum côté backend).
+export type FiltreAlerte = "NON_LUES" | "NON_RESOLUES"
+
+// GET /api/alertes — alertes paginées des parcelles accessibles.
+export function getMesAlertes(
+  options: {
+    filtre?: FiltreAlerte
+    niveau?: NiveauAlerte
+    page?: number
+    size?: number
+  } = {},
+): Promise<Page<Alerte>> {
+  const params = new URLSearchParams()
+  params.set("page", String(options.page ?? 0))
+  params.set("size", String(options.size ?? 10))
+  if (options.filtre) params.set("filtre", options.filtre)
+  if (options.niveau) params.set("niveau", options.niveau)
+  return apiFetch<Page<Alerte>>(`/alertes?${params.toString()}`)
 }
 
-// GET /api/alertes/parcelle/{id}
-export function getAlertesByParcelle(parcelleId: number): Promise<Alerte[]> {
-  return apiFetch<Alerte[]>(`/alertes/parcelle/${parcelleId}`)
+// GET /api/alertes/parcelle/{id} — paginé.
+export function getAlertesByParcelle(
+  parcelleId: number,
+  page = 0,
+  size = 10,
+): Promise<Page<Alerte>> {
+  return apiFetch<Page<Alerte>>(
+    `/alertes/parcelle/${parcelleId}?page=${page}&size=${size}`,
+  )
+}
+
+// GET /api/alertes/nb-non-resolues — compteur pour les badges.
+export function getNbAlertesNonResolues(): Promise<number> {
+  return apiFetch<number>("/alertes/nb-non-resolues")
 }
 
 // PATCH /api/alertes/{id}/lire — marquer comme lue.

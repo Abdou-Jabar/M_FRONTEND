@@ -36,7 +36,13 @@ export default function DashboardPage() {
     if (authLoading) return
     let actif = true
 
-    Promise.all([getDashboardClient(), getMesAlertes(), getMesCultures()])
+    Promise.all([
+      getDashboardClient(),
+      // 3 alertes non résolues les plus graves (tri par niveau côté client
+      // sur la première page serveur).
+      getMesAlertes({ filtre: "NON_RESOLUES", size: 10 }),
+      getMesCultures(),
+    ])
       .then(([s, a, c]) => {
         if (!actif) return
         setStats(s)
@@ -47,8 +53,7 @@ export default function DashboardPage() {
           INFO: 3,
         }
         setAlertes(
-          a
-            .filter((x) => !x.resolue)
+          a.content
             .sort((x, y) => (ordre[x.niveau] ?? 3) - (ordre[y.niveau] ?? 3))
             .slice(0, 3),
         )

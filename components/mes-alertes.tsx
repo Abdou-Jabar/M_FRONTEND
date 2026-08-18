@@ -2,8 +2,9 @@
 
 // Liste des alertes de l'agriculteur : toutes ses parcelles confondues.
 // Messages lisibles, niveau coloré, bouton marquer lue / résolue.
+// Filtres et pagination côté serveur (les alertes s'accumulent avec le temps).
 
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import {
   AlertCircleIcon,
   BellOffIcon,
@@ -20,9 +21,11 @@ import { cn } from "@/lib/utils"
 import { ApiError } from "@/lib/api"
 import {
   getMesAlertes,
+  getNbAlertesNonResolues,
   marquerAlerteLue,
   messageListible,
   resoudreAlerte,
+  type FiltreAlerte,
 } from "@/lib/alertes/alerte-service"
 import {
   NIVEAU_BADGE,
@@ -32,6 +35,8 @@ import {
   type NiveauAlerte,
 } from "@/lib/alertes/types"
 import { PaginationTable } from "@/components/table-outils"
+
+const PAGE_SIZE = 10
 
 function formaterDate(iso: string): string {
   return new Date(iso).toLocaleString("fr-FR", {
@@ -52,34 +57,64 @@ export function MesAlertes() {
   const [error, setError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<number | null>(null)
   const [page, setPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalElements, setTotalElements] = useState(0)
+  const [nbNonResolues, setNbNonResolues] = useState(0)
+
+  const chargerCompteur = useCallback(() => {
+    getNbAlertesNonResolues()
+      .then(setNbNonResolues)
+      .catch(() => {})
+  }, [])
+
+  const charger = useCallback(
+    (f: typeof filtre, p: number) => {
+      const filtreApi: FiltreAlerte | undefined =
+        f === "nonLues" ? "NON_LUES" : f === "nonResolues" ? "NON_RESOLUES" : undefined
+      return getMesAlertes({ filtre: filtreApi, page: p, size: PAGE_SIZE })
+        .then((data) => {
+          setAlertes(data.content)
+          setTotalPages(Math.max(1, data.totalPages))
+          setTotalElements(data.totalElements)
+          setPage(data.number)
+          setError(null)
+        })
+        .catch((e) => {
+          setError(
+            e instanceof ApiError
+              ? e.message
+              : "Impossible de charger les alertes.",
+          )
+        })
+    },
+    [],
+  )
 
   useEffect(() => {
     let actif = true
-    getMesAlertes()
-      .then((data) => {
-        if (!actif) return
-        setAlertes(data)
-        setError(null)
-      })
-      .catch((e) => {
-        if (!actif) return
-        setError(
-          e instanceof ApiError ? e.message : "Impossible de charger les alertes.",
-        )
-      })
-      .finally(() => {
+    Promise.resolve().then(() => {
+      if (!actif) return
+      setIsLoading(true)
+      charger(filtre, page).finally(() => {
         if (actif) setIsLoading(false)
       })
+    })
     return () => {
       actif = false
     }
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtre, page])
+
+  useEffect(() => {
+    chargerCompteur()
+  }, [chargerCompteur])
 
   async function handleLire(id: number) {
     setBusyId(id)
     try {
       const mise = await marquerAlerteLue(id)
       setAlertes((prev) => prev.map((a) => (a.id === id ? mise : a)))
+      if (filtre === "nonLues") await charger(filtre, page)
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : "Action impossible.")
     } finally {
@@ -93,6 +128,8 @@ export function MesAlertes() {
       const mise = await resoudreAlerte(id)
       setAlertes((prev) => prev.map((a) => (a.id === id ? mise : a)))
       toast.success("Alerte marquée comme résolue.")
+      chargerCompteur()
+      if (filtre !== "toutes") await charger(filtre, page)
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : "Action impossible.")
     } finally {
@@ -100,27 +137,10 @@ export function MesAlertes() {
     }
   }
 
-  const affichees = alertes.filter((a) => {
-    if (filtre === "nonLues") return !a.lue
-    if (filtre === "nonResolues") return !a.resolue
-    return true
-  })
-
-  const PAGE_SIZE = 10
-  const totalPages = Math.max(1, Math.ceil(affichees.length / PAGE_SIZE))
-  const pageEffective = Math.min(page, totalPages - 1)
-  const pageAlertes = affichees.slice(
-    pageEffective * PAGE_SIZE,
-    (pageEffective + 1) * PAGE_SIZE,
-  )
-
   function changerFiltre(f: "toutes" | "nonLues" | "nonResolues") {
     setFiltre(f)
     setPage(0)
   }
-
-  const nbNonResolues = alertes.filter((a) => !a.resolue).length
-  const nbNonLues = alertes.filter((a) => !a.lue).length
 
   if (isLoading) {
     return (
@@ -162,22 +182,17 @@ export function MesAlertes() {
           onClick={() => changerFiltre("nonLues")}
         >
           Non lues
-          {nbNonLues > 0 && (
-            <Badge variant="secondary" className="ml-1">
-              {nbNonLues}
-            </Badge>
-          )}
         </Button>
         <Button
           variant={filtre === "toutes" ? "default" : "outline"}
           size="sm"
           onClick={() => changerFiltre("toutes")}
         >
-          Toutes ({alertes.length})
+          Toutes
         </Button>
       </div>
 
-      {affichees.length === 0 ? (
+      {alertes.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-10 text-muted-foreground">
           <BellOffIcon className="size-8 opacity-40" />
           <p className="text-sm">
@@ -190,7 +205,7 @@ export function MesAlertes() {
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          {pageAlertes.map((alerte) => (
+          {alertes.map((alerte) => (
             <CarteAlerte
               key={alerte.id}
               alerte={alerte}
@@ -200,9 +215,9 @@ export function MesAlertes() {
             />
           ))}
           <PaginationTable
-            page={pageEffective}
+            page={page}
             totalPages={totalPages}
-            totalFiltres={affichees.length}
+            totalFiltres={totalElements}
             pageSize={PAGE_SIZE}
             onPageChange={setPage}
           />

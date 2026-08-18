@@ -48,7 +48,8 @@ export interface CommandeRequest {
   dateExtinctionAuto?: string
 }
 
-// Ligne d'historique renvoyée par GET /api/actionneurs/{id}/commandes.
+// Ligne d'historique renvoyée par GET /api/actionneurs/{id}/commandes
+// et GET /api/actionneurs/parcelle/{id}/commandes.
 export interface CommandeActionneur {
   id: number
   etatDemande: boolean
@@ -56,6 +57,9 @@ export interface CommandeActionneur {
   origine: OrigineCommande
   // Null pour les commandes système (pluie, seuils, extinction auto).
   utilisateurNomComplet: string | null
+  // Actionneur concerné (utile pour l'historique agrégé par parcelle).
+  actionneurNom: string | null
+  actionneurType: TypeActionneur | null
 }
 
 // Libellés lisibles (français) pour l'affichage du type d'actionneur.

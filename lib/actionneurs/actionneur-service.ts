@@ -2,6 +2,7 @@
 // S'appuie sur le client HTTP commun (lib/api), qui joint le token JWT.
 
 import { apiFetch } from "@/lib/api"
+import type { Page } from "@/lib/tickets/types"
 import type {
   Actionneur,
   ActionneurRequest,
@@ -72,9 +73,24 @@ export function envoyerCommande(
   })
 }
 
-// Historique des commandes confirmées (ACK) de l'actionneur.
+// Historique paginé des commandes confirmées (ACK) de l'actionneur.
 export function getHistoriqueCommandes(
   id: number,
-): Promise<CommandeActionneur[]> {
-  return apiFetch<CommandeActionneur[]>(`/actionneurs/${id}/commandes`)
+  page = 0,
+  size = 10,
+): Promise<Page<CommandeActionneur>> {
+  return apiFetch<Page<CommandeActionneur>>(
+    `/actionneurs/${id}/commandes?page=${page}&size=${size}`,
+  )
+}
+
+// Historique paginé des commandes de tous les actionneurs d'une parcelle.
+export function getHistoriqueCommandesParcelle(
+  parcelleId: number,
+  page = 0,
+  size = 10,
+): Promise<Page<CommandeActionneur>> {
+  return apiFetch<Page<CommandeActionneur>>(
+    `/actionneurs/parcelle/${parcelleId}/commandes?page=${page}&size=${size}`,
+  )
 }
